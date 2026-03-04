@@ -17,7 +17,7 @@ cd "$APP_DIR"
 
 # --- 1. Pull latest code ---
 echo "[1/6] Pulling latest code..."
-git pull origin main
+git pull origin backend
 
 # --- 2. Install dependencies ---
 echo "[2/6] Installing Composer dependencies..."
