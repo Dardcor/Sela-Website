@@ -12,11 +12,11 @@ echo "  Sela-Website EC2 Server Setup"
 echo "========================================="
 
 # --- 1. System Update ---
-echo "[1/7] Updating system packages..."
+echo "[1/8] Updating system packages..."
 apt update && apt upgrade -y
 
 # --- 2. Install PHP 8.2 + Extensions ---
-echo "[2/7] Installing PHP 8.2 and extensions..."
+echo "[2/8] Installing PHP 8.2 and extensions..."
 apt install -y software-properties-common
 add-apt-repository -y ppa:ondrej/php
 apt update
@@ -36,29 +36,33 @@ apt install -y \
     git
 
 # --- 3. Install Composer ---
-echo "[3/7] Installing Composer..."
+echo "[3/8] Installing Composer..."
 curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 # --- 4. Install Nginx ---
-echo "[4/7] Installing Nginx..."
+echo "[4/8] Installing Nginx..."
 apt install -y nginx
 
-# --- 5. Configure Nginx ---
-echo "[5/7] Configuring Nginx for Laravel..."
+# --- 5. Install Certbot (Let's Encrypt) ---
+echo "[5/8] Installing Certbot for SSL..."
+apt install -y certbot python3-certbot-nginx
+
+# --- 6. Configure Nginx ---
+echo "[6/8] Configuring Nginx for Laravel..."
 cp /var/www/sela-website/deploy/nginx/sela-website.conf /etc/nginx/sites-available/sela-website
 ln -sf /etc/nginx/sites-available/sela-website /etc/nginx/sites-enabled/sela-website
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
-# --- 6. Set Permissions ---
-echo "[6/7] Setting file permissions..."
+# --- 7. Set Permissions ---
+echo "[7/8] Setting file permissions..."
 chown -R www-data:www-data /var/www/sela-website
 chmod -R 755 /var/www/sela-website
 chmod -R 775 /var/www/sela-website/storage
 chmod -R 775 /var/www/sela-website/bootstrap/cache
 
-# --- 7. Enable Services ---
-echo "[7/7] Enabling services..."
+# --- 8. Enable Services ---
+echo "[8/8] Enabling services..."
 systemctl enable php8.2-fpm
 systemctl enable nginx
 systemctl start php8.2-fpm
@@ -67,5 +71,8 @@ systemctl start nginx
 echo ""
 echo "========================================="
 echo "  Server setup complete!"
-echo "  Next: run deploy.sh to deploy the app"
+echo "  Next steps:"
+echo "    1. Configure .env (see DEPLOYMENT.md)"
+echo "    2. Run deploy.sh to deploy the app"
+echo "    3. Run setup-ssl.sh to enable HTTPS"
 echo "========================================="
