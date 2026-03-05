@@ -109,23 +109,15 @@ class EtholService
      */
     public function saveSession(int $userId, string $etholToken, string $etholCookies): void
     {
-        try {
-            UserEtholSession::updateOrCreate(
-                ['user_id' => $userId],
-                [
-                    'ethol_token'   => $etholToken,
-                    'ethol_cookies' => $etholCookies,
-                ]
-            );
-        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-            // Stale row encrypted with a different APP_KEY — delete and recreate.
-            UserEtholSession::where('user_id', $userId)->delete();
-            UserEtholSession::create([
-                'user_id'       => $userId,
-                'ethol_token'   => $etholToken,
-                'ethol_cookies' => $etholCookies,
-            ]);
-        }
+        // Delete any existing session first to avoid decrypting stale data
+        // encrypted with a different APP_KEY (causes MAC invalid errors).
+        UserEtholSession::where('user_id', $userId)->delete();
+
+        UserEtholSession::create([
+            'user_id'       => $userId,
+            'ethol_token'   => $etholToken,
+            'ethol_cookies' => $etholCookies,
+        ]);
     }
 
     /**
