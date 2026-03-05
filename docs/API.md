@@ -867,8 +867,8 @@ This document provides a comprehensive reference for the Sela-Website API.
 
 ### `POST /api/ethol/login`
 
-**Auth:** Required
-**Description:** Log in to ETHOL via CAS.
+**Auth:** Not Required
+**Description:** Log in via PENS CAS (ETHOL). Auto-creates a user account if one doesn't exist. Returns a Sanctum token — works as an alternative to `POST /api/login`.
 
 **Request Body:**
 | Field | Type | Required | Validation |
@@ -879,8 +879,16 @@ This document provides a comprehensive reference for the Sela-Website API.
 **Response:** `200`
 ```json
 {
-  "success": true,
-  "message": "Logged in to ETHOL successfully."
+  "user": {
+    "id": 1,
+    "username": "Fahroldhi Sukirno",
+    "email": "fahroldhisukirno@it.student.pens.ac.id",
+    "class": null,
+    "role": null,
+    "created_at": "2024-03-05T00:00:00.000000Z",
+    "updated_at": "2024-03-05T00:00:00.000000Z"
+  },
+  "token": "1|abcdef123456"
 }
 ```
 
