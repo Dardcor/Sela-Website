@@ -71,7 +71,7 @@ chmod 400 your-key.pem
 ssh -i "your-key.pem" ubuntu@YOUR_EC2_IP
 
 # Clone repo
-sudo git clone https://github.com/YOUR_USERNAME/Sela-Website.git /var/www/sela-website
+sudo git clone -b backend https://github.com/Dardcor/Sela-Website.git /var/www/sela-website
 
 # Install system packages (PHP, Nginx, Composer, Certbot)
 sudo bash /var/www/sela-website/deploy/setup-server.sh
@@ -98,8 +98,8 @@ Yang perlu diubah di `.env`:
 ```env
 APP_URL=https://dardcor.acalypha.my.id
 
-DB_HOST=db.YOUR_PROJECT_REF.supabase.co
-DB_PASSWORD=your-supabase-password
+DB_CONNECTION=pgsql
+DB_URL=postgresql-session-pooler
 ```
 
 Simpan: `Ctrl+O` → `Enter` → `Ctrl+X`.
@@ -177,16 +177,16 @@ Script otomatis mendeteksi SSL aktif dan re-apply konfigurasi Certbot.
 
 ## Troubleshooting
 
-| Masalah | Solusi |
-|---------|--------|
-| 502 Bad Gateway | `sudo systemctl restart php8.2-fpm` |
-| Permission denied | `sudo chown -R www-data:www-data /var/www/sela-website/storage` |
-| DB connection refused | Cek Security Group (outbound port 5432) + kredensial `.env` |
-| SQLSTATE connection error | Pastikan `DB_SSLMODE=require` di `.env` |
-| Supabase paused | Dashboard Supabase → klik "Unpause" (pause setelah 7 hari inaktif) |
+| Masalah                      | Solusi                                                                |
+| ---------------------------- | --------------------------------------------------------------------- |
+| 502 Bad Gateway              | `sudo systemctl restart php8.2-fpm`                                   |
+| Permission denied            | `sudo chown -R www-data:www-data /var/www/sela-website/storage`       |
+| DB connection refused        | Cek Security Group (outbound port 5432) + kredensial `.env`           |
+| SQLSTATE connection error    | Pastikan `DB_SSLMODE=require` di `.env`                               |
+| Supabase paused              | Dashboard Supabase → klik "Unpause" (pause setelah 7 hari inaktif)    |
 | 413 Request Entity Too Large | Nginx diset maks 10MB, naikkan `client_max_body_size` di nginx config |
-| Certbot gagal | Domain belum resolve ke EC2, atau Cloudflare proxy ON |
-| SSL expired | `sudo certbot renew` |
+| Certbot gagal                | Domain belum resolve ke EC2, atau Cloudflare proxy ON                 |
+| SSL expired                  | `sudo certbot renew`                                                  |
 
 Cek log Laravel:
 
