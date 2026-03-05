@@ -71,7 +71,7 @@ class EtholController extends Controller
                 'data'    => $data,
             ]);
         } catch (\Throwable $e) {
-            $status = (str_contains($e->getMessage(), 'expired') || str_contains($e->getMessage(), 'not logged in')) ? 401 : 500;
+            $status = (str_contains($e->getMessage(), 'expired') || str_contains($e->getMessage(), 'not logged in') || str_contains($e->getMessage(), 'No ETHOL session')) ? 401 : 500;
 
             return response()->json([
                 'success' => false,
@@ -93,7 +93,7 @@ class EtholController extends Controller
                 'data'    => $data,
             ]);
         } catch (\Throwable $e) {
-            $status = (str_contains($e->getMessage(), 'expired') || str_contains($e->getMessage(), 'not logged in')) ? 401 : 500;
+            $status = (str_contains($e->getMessage(), 'expired') || str_contains($e->getMessage(), 'not logged in') || str_contains($e->getMessage(), 'No ETHOL session')) ? 401 : 500;
 
             return response()->json([
                 'success' => false,
@@ -115,7 +115,7 @@ class EtholController extends Controller
                 'data'    => $data,
             ]);
         } catch (\Throwable $e) {
-            $status = (str_contains($e->getMessage(), 'expired') || str_contains($e->getMessage(), 'not logged in')) ? 401 : 500;
+            $status = (str_contains($e->getMessage(), 'expired') || str_contains($e->getMessage(), 'not logged in') || str_contains($e->getMessage(), 'No ETHOL session')) ? 401 : 500;
 
             return response()->json([
                 'success' => false,

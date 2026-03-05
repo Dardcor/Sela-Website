@@ -41,25 +41,26 @@ class EtholService
             throw new \Exception('CAS login page did not return expected "lt" field. The CAS endpoint may have changed.');
         }
 
-        if (! preg_match('/name="execution"\s+value="([^"]+)"/', $casHtml, $executionMatches)) {
-            throw new \Exception('CAS login page did not return expected "execution" field. The CAS endpoint may have changed.');
+        // "execution" is optional — some CAS servers omit it.
+        $execution = null;
+        if (preg_match('/name="execution"\s+value="([^"]+)"/', $casHtml, $executionMatches)) {
+            $execution = $executionMatches[1];
         }
 
         $lt = $ltMatches[1];
-        $execution = $executionMatches[1];
 
         // Step 3: POST credentials to the CAS login URL.
         $postResult = $this->fetchWithRedirects($casUrl, $cookieJar, 'POST', [
             'headers' => [
                 'Content-Type' => 'application/x-www-form-urlencoded',
             ],
-            'form_params' => [
+            'form_params' => array_filter([
                 'username'   => $email,
                 'password'   => $password,
                 'lt'         => $lt,
                 'execution'  => $execution,
                 '_eventId'   => 'submit',
-            ],
+            ], fn ($v) => $v !== null),
         ]);
 
         $postHtml = $postResult['body'];
