@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+
+    'ethol' => [
+        'base_url' => env('ETHOL_BASE_URL', 'https://ethol.pens.ac.id'),
+    ],
+
 ];
