@@ -1,335 +1,245 @@
 # Panduan Deployment Sela-Website
 
-Panduan ini berisi langkah-langkah lengkap untuk mendeploy backend Laravel 12 ke AWS EC2 dengan Supabase sebagai database PostgreSQL. Panduan ini dirancang untuk mahasiswa dengan pengetahuan terminal dasar.
-
----
-
-## 1. Arsitektur Deployment
+Deploy backend Laravel 12 ke AWS EC2 dengan Supabase (PostgreSQL) dan HTTPS via Let's Encrypt.
 
 ```text
-+-------------------+       +-----------------------+       +------------------------+
-|   Flutter App     | ----> |      AWS EC2          | ----> |       Supabase         |
-|   (Mobile/Web)    |       |   (Laravel API)       |       |     (PostgreSQL)       |
-+-------------------+       +-----------------------+       +------------------------+
-      Frontend                    Backend Server                  Cloud Database
-                                  + Nginx + SSL
-                                  (Let's Encrypt)
+Flutter App  ──→  AWS EC2 (Nginx + PHP-FPM + SSL)  ──→  Supabase (PostgreSQL)
 ```
 
 ---
 
-## 2. Prasyarat
+## Prasyarat
 
-Sebelum memulai, pastikan Anda memiliki:
-- Akun AWS (bisa menggunakan Free Tier).
-- Akun Supabase (Gratis).
-- Git terinstall di komputer lokal.
-- SSH Key Pair untuk akses EC2.
-- Domain yang sudah diarahkan (A record) ke IP Publik EC2 (wajib untuk SSL).
+- Akun AWS (Free Tier).
+- Akun [Supabase](https://supabase.com) (Gratis).
+- Domain dengan A record ke IP EC2 (wajib untuk SSL).
+- SSH Key Pair (`.pem` file).
 
 ---
 
-## 3. Part A — Setup Supabase Database
+## 1. Setup Supabase
 
-Supabase digunakan sebagai database PostgreSQL managed yang stabil dan gratis.
-
-1. Buat akun di [supabase.com](https://supabase.com).
-2. Klik **New Project** dan pilih region terdekat: Singapore (`ap-southeast-1`).
-3. Set database password dan simpan baik-baik di tempat aman.
-4. Tunggu hingga project selesai proses provisioning.
-5. Buka menu **Settings** (ikon gear) → **Database** → **Connection info**.
-6. Catat detail berikut:
-   - **Host**: `db.xxxx.supabase.co`
-   - **Port**: `5432`
-   - **Database name**: `postgres`
-   - **User**: `postgres`
-   - **Password**: (Password yang Anda buat sebelumnya)
-7. **Connection Pooling**: Jika traffic tinggi, gunakan port `6543` (Transaction mode). Cari infonya di **Settings** → **Database** → **Connection Pooling**.
-8. Format connection string biasanya: `postgresql://postgres:[password]@db.xxxx.supabase.co:5432/postgres`
+1. Buat project baru di [supabase.com](https://supabase.com), region **Singapore** (`ap-southeast-1`).
+2. Set database password — simpan baik-baik.
+3. Buka **Settings → Database → Connection info**, catat:
+   - Host: `db.xxxx.supabase.co`
+   - Port: `5432`
+   - Database: `postgres`
+   - User: `postgres`
+   - Password: *(yang Anda buat)*
 
 ---
 
-## 4. Part B — Launch EC2 Instance
+## 2. Launch EC2
 
-Gunakan AWS Console untuk membuat server virtual.
-
-1. Login ke AWS Console → cari **EC2** → Klik **Launch Instance**.
-2. **Name**: `sela-api-server`.
-3. **AMI**: Ubuntu Server 24.04 LTS (Pastikan ada label *Free tier eligible*).
-4. **Instance type**: `t2.micro` (gratis) atau `t3.micro`.
-5. **Key pair**: Pilih **Create new key pair** → Beri nama → Download file `.pem` → Simpan di folder aman.
-6. **Network Settings** (Security Group):
-   - Centang **Allow SSH traffic** (Port 22) — pilih *My IP*.
-   - Centang **Allow HTTPS traffic** (Port 443) — dari *Anywhere*.
-   - Centang **Allow HTTP traffic** (Port 80) — dari *Anywhere*.
-7. **Storage**: Ganti ke 8 GB gp3 (Free tier).
-8. Klik **Launch Instance**.
-9. Buka daftar instance dan catat **Public IPv4 address** server Anda.
+1. AWS Console → **EC2** → **Launch Instance**.
+2. Konfigurasi:
+   - **Name**: `sela-api-server`
+   - **AMI**: Ubuntu Server 24.04 LTS (Free tier eligible)
+   - **Instance type**: `t2.micro`
+   - **Key pair**: Create new → download `.pem`
+   - **Security Group**:
+     - Port 22 (SSH) — My IP
+     - Port 80 (HTTP) — Anywhere
+     - Port 443 (HTTPS) — Anywhere
+   - **Storage**: 8 GB gp3
+3. Launch, catat **Public IPv4 address**.
 
 ---
 
-## 5. Part C — Setup Domain DNS
+## 3. Setup Domain DNS
 
-Sebelum setup SSL, domain harus diarahkan ke EC2.
+1. Di panel DNS (Cloudflare/Namecheap/dll), buat **A Record**:
+   - Name: `dardcor` (atau subdomain Anda)
+   - Value: IP EC2
+   - Proxy: **OFF** (DNS Only — wajib untuk Let's Encrypt)
+2. Verifikasi: `ping dardcor.acalypha.my.id` → harus resolve ke IP EC2.
 
-1. Login ke panel DNS domain Anda (Cloudflare, Namecheap, dll).
-2. Buat **A Record**:
-   - **Name**: `dardcor` (atau sesuai subdomain Anda)
-   - **Value**: `<Public IPv4 EC2 Anda>`
-   - **TTL**: Auto
-   - **Proxy**: OFF / DNS Only (jangan gunakan proxy Cloudflare jika pakai Let's Encrypt)
-3. Tunggu propagasi DNS (biasanya 1-5 menit, maksimal 24 jam).
-4. Verifikasi dengan: `ping dardcor.acalypha.my.id` — harus resolve ke IP EC2 Anda.
-
-> **PENTING**: Jika menggunakan Cloudflare, pastikan ikon awan berwarna **abu-abu** (DNS Only), bukan **oranye** (Proxied). Let's Encrypt perlu akses langsung ke server untuk verifikasi domain.
+> **Cloudflare**: Pastikan ikon awan **abu-abu** (DNS Only), bukan oranye (Proxied).
 
 ---
 
-## 6. Part D — Setup Server (SSH ke EC2)
+## 4. Setup Server
 
-Sekarang kita akan mengkonfigurasi server Ubuntu agar bisa menjalankan Laravel.
+SSH ke EC2, clone repo, jalankan setup:
 
-1. Masuk ke server via SSH:
-   ```bash
-   ssh -i "path/to/your-key.pem" ubuntu@your-ec2-ip
-   ```
-   *Note untuk Mac/Linux: Jalankan `chmod 400 your-key.pem` terlebih dahulu.*
+```bash
+# Mac/Linux: chmod 400 dulu
+chmod 400 your-key.pem
 
-2. Clone repositori ke folder `/var/www/`:
-   ```bash
-   sudo git clone https://github.com/YOUR_USERNAME/Sela-Website.git /var/www/sela-website
-   ```
-   *Jika repo bersifat private, gunakan Personal Access Token atau tambahkan SSH Key EC2 ke GitHub.*
+# SSH ke server
+ssh -i "your-key.pem" ubuntu@YOUR_EC2_IP
 
-3. Jalankan script setup otomatis:
-   ```bash
-   sudo bash /var/www/sela-website/deploy/setup-server.sh
-   ```
+# Clone repo
+sudo git clone https://github.com/YOUR_USERNAME/Sela-Website.git /var/www/sela-website
 
-4. **Apa yang dilakukan script ini?**
-   - Update sistem paket.
-   - Install PHP 8.2 dan ekstensi yang dibutuhkan Laravel.
-   - Install Composer.
-   - Install dan konfigurasi Nginx.
-   - Install Certbot (untuk SSL Let's Encrypt).
-   - Mengatur permission folder agar web server bisa menulis file.
+# Install system packages (PHP, Nginx, Composer, Certbot)
+sudo bash /var/www/sela-website/deploy/setup-server.sh
+```
+
+Script ini install: PHP 8.2 + extensions, Composer, Nginx, Certbot.
 
 ---
 
-## 7. Part E — Configure Environment
+## 5. Konfigurasi Environment
 
-Konfigurasi file `.env` agar server terhubung ke Supabase.
+```bash
+cd /var/www/sela-website
 
-1. Pindah ke direktori project:
-   ```bash
-   cd /var/www/sela-website
-   ```
-2. Copy template environment:
-   ```bash
-   cp .env.example .env
-   ```
-3. Generate application key:
-   ```bash
-   php artisan key:generate
-   ```
-4. Edit file `.env` menggunakan nano atau vim:
-   ```bash
-   nano .env
-   ```
-   Sesuaikan nilai berikut dengan data dari Supabase dan EC2:
-   ```env
-   APP_ENV=production
-   APP_DEBUG=false
-   APP_URL=https://dardcor.acalypha.my.id
-   
-   DB_CONNECTION=pgsql
-   DB_HOST=db.YOUR_PROJECT_REF.supabase.co
-   DB_PORT=5432
-   DB_DATABASE=postgres
-   DB_USERNAME=postgres
-   DB_PASSWORD=your-supabase-password
-   DB_SSLMODE=require
-   ```
-   *Tekan `Ctrl+O` lalu `Enter` untuk save, dan `Ctrl+X` untuk exit.*
+# Buat file .env dari template
+sudo cp .env.example .env
 
-5. Jalankan migrasi database:
-   ```bash
-   php artisan migrate --force
-   ```
-6. Cache konfigurasi untuk performa maksimal:
-   ```bash
-   php artisan config:cache && php artisan route:cache
-   ```
+# Edit dengan kredensial Supabase Anda
+sudo nano .env
+```
+
+Yang perlu diubah di `.env`:
+
+```env
+APP_URL=https://dardcor.acalypha.my.id
+
+DB_HOST=db.YOUR_PROJECT_REF.supabase.co
+DB_PASSWORD=your-supabase-password
+```
+
+Simpan: `Ctrl+O` → `Enter` → `Ctrl+X`.
 
 ---
 
-## 8. Part F — Deploy & Test (HTTP)
+## 6. Deploy
 
-1. Jalankan script deploy untuk memastikan semua dependensi terinstall:
-   ```bash
-   bash /var/www/sela-website/deploy/deploy.sh
-   ```
+```bash
+sudo bash /var/www/sela-website/deploy/deploy.sh
+```
 
-2. Test API dari komputer lokal menggunakan `curl` atau Postman:
-   ```bash
-   # Register User Baru
-   curl -X POST http://dardcor.acalypha.my.id/api/register \
-     -H "Content-Type: application/json" \
-     -H "Accept: application/json" \
-     -d '{"username":"testuser","email":"test@test.com","password":"password123"}'
-   
-   # Login
-   curl -X POST http://dardcor.acalypha.my.id/api/login \
-     -H "Content-Type: application/json" \
-     -H "Accept: application/json" \
-     -d '{"email":"test@test.com","password":"password123"}'
-   ```
+Script ini melakukan:
+1. `git pull origin backend`
+2. `composer install --no-dev`
+3. Buat `.env` jika belum ada (dan stop agar Anda edit dulu)
+4. `php artisan key:generate` (jika belum ada key)
+5. `php artisan migrate --force`
+6. Cache config, routes, views
+7. Set permissions (`www-data`)
+8. Konfigurasi Nginx + restart PHP-FPM
 
-3. Verifikasi data telah masuk di **Supabase Dashboard** → **Table Editor** → table `users`.
+### Test (HTTP):
+
+```bash
+curl -X POST http://dardcor.acalypha.my.id/api/register \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"username":"testuser","email":"test@test.com","password":"password123"}'
+```
 
 ---
 
-## 9. Part G — Setup SSL (Let's Encrypt) 🔒
-
-Setelah API berjalan via HTTP, aktifkan HTTPS menggunakan Let's Encrypt.
-
-### Prasyarat SSL:
-- ✅ Domain sudah diarahkan ke IP EC2 (Part C).
-- ✅ Port 80 dan 443 terbuka di Security Group EC2.
-- ✅ Nginx sudah berjalan dan melayani site via HTTP.
-
-### Jalankan script SSL:
+## 7. Setup SSL (Let's Encrypt)
 
 ```bash
 sudo bash /var/www/sela-website/deploy/setup-ssl.sh
 ```
 
-### Apa yang dilakukan script ini?
-1. Memverifikasi Certbot terinstall.
-2. Meminta email untuk notifikasi perpanjangan sertifikat (opsional).
-3. Mendapatkan sertifikat SSL dari Let's Encrypt secara otomatis.
-4. Mengkonfigurasi Nginx untuk HTTPS + auto-redirect HTTP → HTTPS.
-5. Mengatur auto-renewal sertifikat (setiap 60 hari, otomatis).
+Script ini:
+1. Mendapatkan sertifikat SSL dari Let's Encrypt.
+2. Konfigurasi Nginx untuk HTTPS + redirect HTTP → HTTPS.
+3. Mengatur auto-renewal (setiap 60 hari, otomatis).
 
-### Verifikasi SSL:
+### Test (HTTPS):
 
 ```bash
-# Test HTTPS
-curl -I https://dardcor.acalypha.my.id/api
-
-# Cek status sertifikat
-sudo certbot certificates
-
-# Test auto-renewal
-sudo certbot renew --dry-run
-```
-
-### Test API via HTTPS:
-
-```bash
-# Register User Baru
 curl -X POST https://dardcor.acalypha.my.id/api/register \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{"username":"testuser","email":"test@test.com","password":"password123"}'
-
-# Login
-curl -X POST https://dardcor.acalypha.my.id/api/login \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '{"email":"test@test.com","password":"password123"}'
 ```
 
----
-
-## 10. Part H — Update Deployment (Deploy Ulang)
-
-Jika Anda melakukan perubahan kode di komputer lokal dan sudah push ke GitHub, lakukan langkah ini di server:
+### Verifikasi SSL:
 
 ```bash
-ssh -i "your-key.pem" ubuntu@your-ec2-ip
-cd /var/www/sela-website
-bash deploy/deploy.sh
+sudo certbot certificates        # Status sertifikat
+sudo certbot renew --dry-run     # Test auto-renewal
 ```
 
-> **Catatan**: Script deploy.sh sudah otomatis mendeteksi apakah SSL aktif dan menampilkan URL yang sesuai (HTTP atau HTTPS).
+---
+
+## 8. Update Deployment
+
+Setelah push kode baru ke GitHub:
+
+```bash
+ssh -i "your-key.pem" ubuntu@YOUR_EC2_IP
+sudo bash /var/www/sela-website/deploy/deploy.sh
+```
+
+Script otomatis mendeteksi SSL aktif dan re-apply konfigurasi Certbot.
 
 ---
 
-## 11. Troubleshooting
+## Troubleshooting
 
-Beberapa masalah umum yang mungkin terjadi:
+| Masalah | Solusi |
+|---------|--------|
+| 502 Bad Gateway | `sudo systemctl restart php8.2-fpm` |
+| Permission denied | `sudo chown -R www-data:www-data /var/www/sela-website/storage` |
+| DB connection refused | Cek Security Group (outbound port 5432) + kredensial `.env` |
+| SQLSTATE connection error | Pastikan `DB_SSLMODE=require` di `.env` |
+| Supabase paused | Dashboard Supabase → klik "Unpause" (pause setelah 7 hari inaktif) |
+| 413 Request Entity Too Large | Nginx diset maks 10MB, naikkan `client_max_body_size` di nginx config |
+| Certbot gagal | Domain belum resolve ke EC2, atau Cloudflare proxy ON |
+| SSL expired | `sudo certbot renew` |
 
-- **502 Bad Gateway**: PHP-FPM mungkin mati. Cek dengan: `sudo systemctl restart php8.2-fpm`.
-- **Permission denied**: Pastikan owner folder benar: `sudo chown -R www-data:www-data /var/www/sela-website/storage`.
-- **DB connection refused**:
-  - Cek apakah Security Group EC2 memperbolehkan akses keluar ke port 5432.
-  - Cek kembali kredensial di `.env`.
-- **SQLSTATE connection error**: Pastikan `DB_SSLMODE=require` sudah ada di `.env`.
-- **Supabase project paused**: Project gratis akan "tidur" jika tidak ada aktivitas selama 7 hari. Buka dashboard Supabase dan klik "Unpause".
-- **413 Request Entity Too Large**: Konfigurasi Nginx sudah diset maksimal 10MB untuk upload file.
-- **Cek Log Laravel**: Jika error tidak jelas, lihat log: `tail -f /var/www/sela-website/storage/logs/laravel.log`.
+Cek log Laravel:
 
-### Troubleshooting SSL:
-
-- **Certbot gagal mendapatkan sertifikat**:
-  - Pastikan domain sudah resolve ke IP EC2: `dig dardcor.acalypha.my.id`
-  - Pastikan port 80 terbuka: `sudo ufw status` atau cek Security Group AWS.
-  - Jika pakai Cloudflare, matikan proxy (awan abu-abu, bukan oranye).
-- **Sertifikat expired**: Jalankan `sudo certbot renew` secara manual.
-- **Cek status renewal timer**: `sudo systemctl status certbot.timer`.
-- **Nginx error setelah SSL**: Cek config: `sudo nginx -t` dan restart: `sudo systemctl restart nginx`.
+```bash
+tail -f /var/www/sela-website/storage/logs/laravel.log
+```
 
 ---
 
-## 12. Catatan Penting
+## Struktur File Deploy
 
-- **AWS Free Tier**: EC2 gratis selama 750 jam/bulan untuk 12 bulan pertama.
-- **Supabase Free Tier**: Database maksimal 500MB, akan di-pause otomatis jika tidak aktif.
-- **SSL/HTTPS**: Sertifikat Let's Encrypt berlaku 90 hari dan di-renew otomatis oleh Certbot setiap 60 hari.
-- **File Upload**: File yang diunggah akan tersimpan di local storage EC2 (`storage/app/`). File tidak akan hilang kecuali Anda menghapus instance EC2.
-- **Backup**: Supabase melakukan backup harian otomatis pada paket berbayar. Untuk paket gratis, lakukan export manual via `pg_dump`.
-
----
-
-## 13. Struktur File Deployment
-
-Folder `deploy/` berisi file-file berikut:
 ```text
 deploy/
 ├── nginx/
-│   └── sela-website.conf    # Konfigurasi virtual host Nginx (HTTP, Certbot auto-adds HTTPS)
-├── setup-server.sh           # Script setup server (sekali jalan)
-├── setup-ssl.sh              # Script setup SSL Let's Encrypt (sekali jalan, setelah deploy)
-└── deploy.sh                 # Script deployment rutin (setiap update kode)
+│   └── sela-website.conf   # Nginx config (HTTP — Certbot adds HTTPS)
+├── setup-server.sh          # Install system packages (sekali)
+├── setup-ssl.sh             # Setup Let's Encrypt SSL (sekali)
+└── deploy.sh                # Deploy app (setiap update)
 ```
 
 ---
 
-## 14. Urutan Lengkap Setup (Ringkasan)
+## Ringkasan — Urutan Lengkap
 
 ```bash
-# 1. SSH ke EC2
-ssh -i "your-key.pem" ubuntu@your-ec2-ip
+# 1. SSH
+ssh -i "your-key.pem" ubuntu@YOUR_EC2_IP
 
-# 2. Clone repo
+# 2. Clone
 sudo git clone https://github.com/YOUR_USERNAME/Sela-Website.git /var/www/sela-website
 
-# 3. Setup server (install PHP, Nginx, Certbot, dll)
+# 3. Install system packages
 sudo bash /var/www/sela-website/deploy/setup-server.sh
 
 # 4. Configure .env
 cd /var/www/sela-website
-cp .env.example .env
-nano .env                    # Edit sesuai kredensial Supabase
-php artisan key:generate
+sudo cp .env.example .env
+sudo nano .env              # ← isi kredensial Supabase
 
-# 5. Deploy aplikasi
-bash deploy/deploy.sh
+# 5. Deploy (composer install, key:generate, migrate, nginx, dll)
+sudo bash deploy/deploy.sh
 
-# 6. Setup SSL (pastikan domain sudah diarahkan ke IP EC2)
+# 6. SSL
 sudo bash deploy/setup-ssl.sh
 
-# 7. Done! API tersedia di:
-#    https://dardcor.acalypha.my.id/api
+# Done → https://dardcor.acalypha.my.id/api
 ```
+
+---
+
+## Catatan
+
+- **AWS Free Tier**: 750 jam/bulan EC2 gratis selama 12 bulan pertama.
+- **Supabase Free Tier**: Maks 500MB, auto-pause jika tidak aktif 7 hari.
+- **SSL**: Sertifikat berlaku 90 hari, auto-renew setiap 60 hari oleh Certbot.
+- **File Upload**: Disimpan di `storage/app/` pada EC2. Hilang jika instance dihapus.
