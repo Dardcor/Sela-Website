@@ -14,12 +14,12 @@ class EtholController extends Controller
      */
     public function login(Request $request, EtholService $service): JsonResponse
     {
-        try {
-            $validated = $request->validate([
-                'email'    => 'required|string',
-                'password' => 'required|string',
-            ]);
+        $validated = $request->validate([
+            'email'    => 'required|string',
+            'password' => 'required|string',
+        ]);
 
+        try {
             $service->login($validated['email'], $validated['password'], $request->user()->id);
 
             return response()->json([
