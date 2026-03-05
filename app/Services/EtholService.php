@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\UserEtholSession;
 use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Support\Facades\Http;
 
 class EtholService
 {
@@ -224,5 +226,402 @@ class EtholService
             'finalUrl'  => $url,
             'cookieJar' => $cookieJar,
         ];
+    }
+
+    // -------------------------------------------------------------------------
+    // Private Helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Build the standard ETHOL API request headers.
+     */
+    private function makeEtholHeaders(string $token): array
+    {
+        return [
+            'User-Agent' => self::USER_AGENT,
+            'token'      => $token,
+        ];
+    }
+
+    /**
+     * Extract the student nomor from the JWT payload.
+     * Returns null if the token is malformed.
+     */
+    private function getUserNomorFromToken(string $token): ?int
+    {
+        $parts = explode('.', $token);
+
+        if (count($parts) < 2) {
+            return null;
+        }
+
+        // Base64url → base64 padding fix, then decode.
+        $padded  = str_pad(strtr($parts[1], '-_', '+/'), (int) (ceil(strlen($parts[1]) / 4) * 4), '=');
+        $payload = json_decode(base64_decode($padded), true);
+
+        return isset($payload['nomor']) ? (int) $payload['nomor']
+             : (isset($payload['sub'])  ? (int) $payload['sub'] : null);
+    }
+
+    /**
+     * Build the array of semester descriptors for the past three years.
+     * Yields 6 entries: (currentYear-2, currentYear-1, currentYear) × (1, 2).
+     */
+    private function buildSemesters(): array
+    {
+        $currentYear = (int) date('Y');
+        $semesters   = [];
+
+        for ($y = $currentYear - 2; $y <= $currentYear; $y++) {
+            $semesters[] = ['tahun' => $y, 'semester' => 1];
+            $semesters[] = ['tahun' => $y, 'semester' => 2];
+        }
+
+        return $semesters;
+    }
+
+    // -------------------------------------------------------------------------
+    // Data Fetching Methods
+    // -------------------------------------------------------------------------
+
+    /**
+     * Fetch the current semester schedule for a user.
+     *
+     * @throws \Exception
+     */
+    public function getSchedule(int $userId): array
+    {
+        $session = $this->getSession($userId);
+        $token   = $session->ethol_token;
+        $headers = $this->makeEtholHeaders($token);
+
+        // Fetch the list of subjects for the current semester.
+        $subjectResponse = Http::withHeaders($headers)
+            ->get("{$this->baseUrl}/api/kuliah?tahun=2025&semester=2");
+
+        if (! $subjectResponse->successful()) {
+            UserEtholSession::where('user_id', $userId)->delete();
+            throw new \Exception('Session expired');
+        }
+
+        $subjects = $subjectResponse->json();
+
+        if (! is_array($subjects) || empty($subjects)) {
+            return [];
+        }
+
+        // Build the minimal kuliahs payload for the schedule endpoint.
+        $kuliahs = array_map(fn ($s) => [
+            'nomor'      => $s['nomor'],
+            'jenisSchema' => $s['jenisSchema'],
+        ], $subjects);
+
+        // Index subjects by nomor for O(1) lookup when joining.
+        $subjectMap = [];
+        foreach ($subjects as $s) {
+            $subjectMap[$s['nomor']] = $s;
+        }
+
+        // Fetch the schedule (hari kuliah) entries.
+        $scheduleResponse = Http::withHeaders($headers)
+            ->post("{$this->baseUrl}/api/kuliah/hari-kuliah-in", [
+                'kuliahs'  => $kuliahs,
+                'tahun'    => 2025,
+                'semester' => 2,
+            ]);
+
+        if (! $scheduleResponse->successful()) {
+            UserEtholSession::where('user_id', $userId)->delete();
+            throw new \Exception('Session expired');
+        }
+
+        $entries = $scheduleResponse->json();
+
+        if (! is_array($entries)) {
+            return [];
+        }
+
+        // Join schedule entries with their subject data and build the output shape.
+        $result = [];
+        foreach ($entries as $entry) {
+            $subjectNomor = $entry['kuliah'] ?? null;
+            $subject      = $subjectNomor ? ($subjectMap[$subjectNomor] ?? null) : null;
+
+            if (! $subject) {
+                continue;
+            }
+
+            // Build the dosen title by joining prefix + name + suffix.
+            $dosenParts = array_filter([
+                trim($subject['gelar_dpn'] ?? ''),
+                trim($subject['dosen'] ?? ''),
+                trim($subject['gelar_blk'] ?? ''),
+            ]);
+            $dosenTitle = implode(' ', $dosenParts);
+
+            $result[] = [
+                'id'          => $entry['kuliah'],
+                'subjectName' => $subject['matakuliah']['nama'] ?? '',
+                'dosen'       => $subject['dosen'] ?? '',
+                'dosenTitle'  => $dosenTitle ?: '-',
+                'kodeKelas'   => $subject['kode_kelas'] ?? '',
+                'pararel'     => $subject['pararel'] ?? '',
+                'hari'        => $entry['hari'] ?? '',
+                'jamAwal'     => $entry['jam_awal'] ?? '',
+                'jamAkhir'    => $entry['jam_akhir'] ?? '',
+                'nomorHari'   => $entry['nomor_hari'] ?? null,
+                'ruang'       => $entry['ruang'] ?? '',
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Fetch homework (tugas) across the last three academic years for a user.
+     *
+     * @throws \Exception
+     */
+    public function getHomework(int $userId): array
+    {
+        $session   = $this->getSession($userId);
+        $token     = $session->ethol_token;
+        $headers   = $this->makeEtholHeaders($token);
+        $semesters = $this->buildSemesters();
+        $baseUrl   = $this->baseUrl;
+
+        // ------------------------------------------------------------------
+        // Wave 1: fetch all subjects concurrently across 6 semesters.
+        // ------------------------------------------------------------------
+        $subjectResponses = Http::pool(fn (Pool $pool) => array_map(
+            fn ($s) => $pool
+                ->withHeaders($headers)
+                ->get("{$baseUrl}/api/kuliah?tahun={$s['tahun']}&semester={$s['semester']}"),
+            $semesters
+        ));
+
+        // Collect all subjects, tagging each with its semester context.
+        $allSubjects = [];
+        foreach ($subjectResponses as $i => $response) {
+            if (! ($response instanceof \Illuminate\Http\Client\Response) || ! $response->successful()) {
+                continue; // Graceful degradation: skip failed semesters.
+            }
+
+            $data = $response->json();
+
+            if (! is_array($data)) {
+                continue;
+            }
+
+            foreach ($data as $subject) {
+                $allSubjects[] = [
+                    'subject'  => $subject,
+                    'tahun'    => $semesters[$i]['tahun'],
+                    'semester' => $semesters[$i]['semester'],
+                ];
+            }
+        }
+
+        if (empty($allSubjects)) {
+            return [];
+        }
+
+        // ------------------------------------------------------------------
+        // Wave 2: fetch tugas for every subject concurrently.
+        // ------------------------------------------------------------------
+        $tugasResponses = Http::pool(fn (Pool $pool) => array_map(
+            fn ($item) => $pool
+                ->withHeaders($headers)
+                ->get(
+                    "{$baseUrl}/api/tugas",
+                    [
+                        'kuliah'      => $item['subject']['nomor'],
+                        'jenisSchema' => $item['subject']['jenisSchema'],
+                    ]
+                ),
+            $allSubjects
+        ));
+
+        // ------------------------------------------------------------------
+        // Build the flat homework list.
+        // ------------------------------------------------------------------
+        $result = [];
+
+        foreach ($tugasResponses as $i => $response) {
+            if (! ($response instanceof \Illuminate\Http\Client\Response) || ! $response->successful()) {
+                continue;
+            }
+
+            $tugasList = $response->json();
+
+            if (! is_array($tugasList)) {
+                continue;
+            }
+
+            $subjectContext = $allSubjects[$i];
+            $subject        = $subjectContext['subject'];
+            $tahun          = $subjectContext['tahun'];
+            $semester       = $subjectContext['semester'];
+
+            foreach ($tugasList as $tugas) {
+                // Determine submission status.
+                $submissionTime = $tugas['submission_time'] ?? null;
+                $deadline       = $tugas['deadline'] ?? null;
+
+                if ($submissionTime === null) {
+                    $status = 'not_submitted';
+                } elseif ($deadline !== null && strtotime($submissionTime) > strtotime($deadline)) {
+                    $status = 'late';
+                } else {
+                    $status = 'on_time';
+                }
+
+                $result[] = [
+                    'id'                      => $tugas['id'] ?? null,
+                    'title'                   => $tugas['title'] ?? '',
+                    'description'             => $tugas['description'] ?? '',
+                    'deadline'                => $deadline,
+                    'deadlineIndonesia'       => $tugas['deadline_indonesia'] ?? null,
+                    'submissionTime'          => $submissionTime,
+                    'submissionTimeIndonesia' => $tugas['submission_time_indonesia'] ?? null,
+                    'status'                  => $status,
+                    'subjectName'             => $subject['matakuliah']['nama'] ?? '',
+                    'subjectNomor'            => $subject['nomor'] ?? null,
+                    'tahun'                   => $tahun,
+                    'semester'                => $semester,
+                    'fileCount'               => count($tugas['file'] ?? []),
+                ];
+            }
+        }
+
+        // Sort by deadline descending (nulls last).
+        usort($result, function ($a, $b) {
+            if ($a['deadline'] === null && $b['deadline'] === null) return 0;
+            if ($a['deadline'] === null) return 1;
+            if ($b['deadline'] === null) return -1;
+
+            return strtotime($b['deadline']) <=> strtotime($a['deadline']);
+        });
+
+        return $result;
+    }
+
+    /**
+     * Fetch attendance (presensi) across the last three academic years for a user.
+     *
+     * @throws \Exception
+     */
+    public function getAttendance(int $userId): array
+    {
+        $session    = $this->getSession($userId);
+        $token      = $session->ethol_token;
+        $headers    = $this->makeEtholHeaders($token);
+        $semesters  = $this->buildSemesters();
+        $baseUrl    = $this->baseUrl;
+        $userNomor  = $this->getUserNomorFromToken($token);
+
+        // ------------------------------------------------------------------
+        // Wave 1: fetch subjects for all semesters concurrently.
+        // ------------------------------------------------------------------
+        $subjectResponses = Http::pool(fn (Pool $pool) => array_map(
+            fn ($s) => $pool
+                ->withHeaders($headers)
+                ->get("{$baseUrl}/api/kuliah?tahun={$s['tahun']}&semester={$s['semester']}"),
+            $semesters
+        ));
+
+        $allSubjects = [];
+        foreach ($subjectResponses as $i => $response) {
+            if (! ($response instanceof \Illuminate\Http\Client\Response) || ! $response->successful()) {
+                continue;
+            }
+
+            $data = $response->json();
+
+            if (! is_array($data)) {
+                continue;
+            }
+
+            foreach ($data as $subject) {
+                $allSubjects[] = [
+                    'subject'  => $subject,
+                    'tahun'    => $semesters[$i]['tahun'],
+                    'semester' => $semesters[$i]['semester'],
+                ];
+            }
+        }
+
+        if (empty($allSubjects)) {
+            return [];
+        }
+
+        // ------------------------------------------------------------------
+        // Wave 2: fetch presensi for every subject concurrently.
+        // ------------------------------------------------------------------
+        $presensiResponses = Http::pool(fn (Pool $pool) => array_map(
+            fn ($item) => $pool
+                ->withHeaders($headers)
+                ->get(
+                    "{$baseUrl}/api/presensi/riwayat",
+                    [
+                        'kuliah'       => $item['subject']['nomor'],
+                        'jenis_schema' => $item['subject']['jenisSchema'],
+                        'nomor'        => $userNomor,
+                    ]
+                ),
+            $allSubjects
+        ));
+
+        // ------------------------------------------------------------------
+        // Build attendance items, filtering subjects with zero presensi.
+        // ------------------------------------------------------------------
+        $result = [];
+
+        foreach ($presensiResponses as $i => $response) {
+            if (! ($response instanceof \Illuminate\Http\Client\Response) || ! $response->successful()) {
+                continue;
+            }
+
+            $presensiList = $response->json();
+
+            if (! is_array($presensiList) || count($presensiList) === 0) {
+                continue; // Filter subjects with 0 presensi records.
+            }
+
+            $subjectContext = $allSubjects[$i];
+            $subject        = $subjectContext['subject'];
+            $tahun          = $subjectContext['tahun'];
+            $semester       = $subjectContext['semester'];
+
+            $result[] = [
+                'subjectName'      => $subject['matakuliah']['nama'] ?? '',
+                'subjectNomor'     => $subject['nomor'] ?? null,
+                'tahun'            => $tahun,
+                'semester'         => $semester,
+                'date'             => $presensiList[0]['waktu_indonesia'] ?? '',
+                'totalSessions'    => count($presensiList),
+                'attendedSessions' => count($presensiList),
+                'attendanceRate'   => 100,
+                'history'          => array_map(
+                    fn ($p) => ['date' => $p['waktu_indonesia'], 'key' => $p['key']],
+                    $presensiList
+                ),
+            ];
+        }
+
+        // Sort: year desc → semester desc → subject name asc.
+        usort($result, function ($a, $b) {
+            if ($a['tahun'] !== $b['tahun']) {
+                return $b['tahun'] <=> $a['tahun'];
+            }
+
+            if ($a['semester'] !== $b['semester']) {
+                return $b['semester'] <=> $a['semester'];
+            }
+
+            return strcmp($a['subjectName'], $b['subjectName']);
+        });
+
+        return $result;
     }
 }
