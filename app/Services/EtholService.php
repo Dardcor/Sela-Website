@@ -22,11 +22,13 @@ class EtholService
     }
 
     /**
-     * Perform CAS login and persist the session to the database.
+     * Perform CAS login and return the extracted JWT token + cookies.
+     * Does NOT persist to database — the caller is responsible for that.
      *
+     * @return array{token: string, cookies: string}
      * @throws \Exception
      */
-    public function login(string $email, string $password, int $userId): void
+    public function loginCas(string $email, string $password): array
     {
         $cookieJar = new CookieJar();
 
@@ -73,7 +75,7 @@ class EtholService
         }
 
         // Step 4 (continued): Extract the JWT token from the page JavaScript.
-        if (! preg_match("/localStorage\.setItem\(['\"]token['\"]\s*,\s*['\"]([A-Za-z0-9._-]+)['\"]\)/", $postHtml, $tokenMatches)) {
+        if (! preg_match("/localStorage\.setItem\\(['\"]token['\"]\\s*,\\s*['\"]([A-Za-z0-9._-]+)['\"]\\)/", $postHtml, $tokenMatches)) {
             throw new \Exception('Could not extract authentication token from the ETHOL response. The login flow may have changed.');
         }
 
@@ -96,14 +98,42 @@ class EtholService
             throw new \Exception('ETHOL API verification failed: expected a JSON array response but received unexpected data.');
         }
 
-        // Step 6: Persist the session to the database.
+        return [
+            'token'   => $token,
+            'cookies' => json_encode($cookieJar->toArray()),
+        ];
+    }
+
+    /**
+     * Persist ETHOL session to the database for a given user.
+     */
+    public function saveSession(int $userId, string $etholToken, string $etholCookies): void
+    {
         UserEtholSession::updateOrCreate(
             ['user_id' => $userId],
             [
-                'ethol_token'   => $token,
-                'ethol_cookies' => json_encode($cookieJar->toArray()),
+                'ethol_token'   => $etholToken,
+                'ethol_cookies' => $etholCookies,
             ]
         );
+    }
+
+    /**
+     * Decode the JWT payload and return it as an associative array.
+     * Returns null if the token is malformed.
+     */
+    public function decodeJwtPayload(string $token): ?array
+    {
+        $parts = explode('.', $token);
+
+        if (count($parts) < 2) {
+            return null;
+        }
+
+        $padded  = str_pad(strtr($parts[1], '-_', '+/'), (int) (ceil(strlen($parts[1]) / 4) * 4), '=');
+        $payload = json_decode(base64_decode($padded), true);
+
+        return is_array($payload) ? $payload : null;
     }
 
     /**

@@ -23,6 +23,9 @@ use Illuminate\Support\Facades\Route;
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
 
+// ETHOL login (public — alternative auth method)
+Route::post('ethol/login', [EtholController::class, 'login']);
+
 /*
 |--------------------------------------------------------------------------
 | Authenticated Routes (auth:sanctum)
@@ -86,9 +89,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('task-generations/{id}', [TaskGenerationController::class, 'show']);
     Route::delete('task-generations/{id}', [TaskGenerationController::class, 'destroy']);
 
-    // ETHOL Integration
+    // ETHOL Integration (authenticated — requires prior login)
     Route::prefix('ethol')->group(function () {
-        Route::post('login', [EtholController::class, 'login']);
         Route::post('logout', [EtholController::class, 'logout']);
         Route::get('schedule', [EtholController::class, 'schedule']);
         Route::get('homework', [EtholController::class, 'homework']);

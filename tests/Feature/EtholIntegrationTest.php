@@ -31,68 +31,99 @@ class EtholIntegrationTest extends TestCase
     // -------------------------------------------------------------------------
 
     /** @test */
-    public function test_ethol_login_requires_sanctum_auth(): void
+    public function test_ethol_login_works_without_sanctum_auth(): void
     {
+        // Mock the service so no real CAS calls are made.
+        $this->mock(EtholService::class, function ($mock) {
+            $mock->shouldReceive('loginCas')
+                ->once()
+                ->with('test@test.com', 'password')
+                ->andReturn([
+                    'token'   => 'eyJhbGciOiJIUzI1NiJ9.eyJub21vciI6MSwibnJwIjoiMTIzNCIsIm5hbWEiOiJUZXN0IFVzZXIiLCJuaXBucnAiOiIxMjM0In0.fake',
+                    'cookies' => '[]',
+                ]);
+
+            $mock->shouldReceive('decodeJwtPayload')
+                ->once()
+                ->andReturn([
+                    'nomor'  => 1,
+                    'nipnrp' => '1234',
+                    'nama'   => 'Test User',
+                ]);
+
+            $mock->shouldReceive('saveSession')
+                ->once();
+        });
+
+        // No actingAs() — this is a public route now.
         $response = $this->postJson('/api/ethol/login', [
             'email'    => 'test@test.com',
             'password' => 'password',
         ]);
 
-        $response->assertStatus(401);
+        $response->assertStatus(200);
+        $response->assertJsonStructure(['user', 'token']);
     }
 
     /** @test */
     public function test_ethol_login_validates_input(): void
     {
-        $user = $this->makeUser();
-
-        // Missing both email and password
-        $response = $this->actingAs($user)->postJson('/api/ethol/login', []);
+        // Missing both email and password (public route, no actingAs needed)
+        $response = $this->postJson('/api/ethol/login', []);
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['email', 'password']);
     }
 
     /** @test */
-    public function test_ethol_login_success(): void
+    public function test_ethol_login_success_creates_user(): void
     {
-        $user = $this->makeUser();
-
-        // Mock the EtholService so no real HTTP calls are made.
-        // The mock stubs out login() to do nothing (simulating a successful CAS flow).
-        $this->mock(EtholService::class, function ($mock) use ($user) {
-            $mock->shouldReceive('login')
+        // Mock the service so no real CAS calls are made.
+        $this->mock(EtholService::class, function ($mock) {
+            $mock->shouldReceive('loginCas')
                 ->once()
-                ->with('test@test.com', 'password', $user->id);
+                ->with('new@test.com', 'password')
+                ->andReturn([
+                    'token'   => 'eyJhbGciOiJIUzI1NiJ9.eyJub21vciI6MSwibnJwIjoiOTk5OSIsIm5hbWEiOiJOZXcgVXNlciIsIm5pcG5ycCI6Ijk5OTkifQ.fake',
+                    'cookies' => '[]',
+                ]);
+
+            $mock->shouldReceive('decodeJwtPayload')
+                ->once()
+                ->andReturn([
+                    'nomor'  => 1,
+                    'nipnrp' => '9999',
+                    'nama'   => 'New User',
+                ]);
+
+            $mock->shouldReceive('saveSession')
+                ->once();
         });
 
-        $response = $this->actingAs($user)->postJson('/api/ethol/login', [
-            'email'    => 'test@test.com',
+        $this->assertDatabaseMissing('users', ['email' => 'new@test.com']);
+
+        $response = $this->postJson('/api/ethol/login', [
+            'email'    => 'new@test.com',
             'password' => 'password',
         ]);
 
         $response->assertStatus(200);
-        $response->assertJson([
-            'success' => true,
-            'message' => 'Logged in to ETHOL successfully.',
-        ]);
+        $response->assertJsonStructure(['user', 'token']);
+        $this->assertDatabaseHas('users', ['email' => 'new@test.com', 'username' => '9999']);
     }
 
     /** @test */
     public function test_ethol_login_invalid_credentials(): void
     {
-        $user = $this->makeUser();
-
-        // Mock login() to throw the "Invalid credentials" exception that the
-        // real service throws after detecting a failed CAS login.
-        $this->mock(EtholService::class, function ($mock) use ($user) {
-            $mock->shouldReceive('login')
+        // Mock loginCas() to throw the "Invalid credentials" exception.
+        $this->mock(EtholService::class, function ($mock) {
+            $mock->shouldReceive('loginCas')
                 ->once()
-                ->with('test@test.com', 'wrongpass', $user->id)
+                ->with('test@test.com', 'wrongpass')
                 ->andThrow(new \Exception('Invalid credentials. Please check your username and password.'));
         });
 
-        $response = $this->actingAs($user)->postJson('/api/ethol/login', [
+        $response = $this->postJson('/api/ethol/login', [
             'email'    => 'test@test.com',
             'password' => 'wrongpass',
         ]);
