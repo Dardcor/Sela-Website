@@ -21,12 +21,10 @@ Flutter App  ──→  AWS EC2 (Nginx + PHP-FPM + SSL)  ──→  Supabase (Po
 
 1. Buat project baru di [supabase.com](https://supabase.com), region **Singapore** (`ap-southeast-1`).
 2. Set database password — simpan baik-baik.
-3. Buka **Settings → Database → Connection info**, catat:
-   - Host: `db.xxxx.supabase.co`
-   - Port: `5432`
-   - Database: `postgres`
-   - User: `postgres`
-   - Password: *(yang Anda buat)*
+3. Buka **Settings → Connect** :
+   - Type: `URI`
+   - Method: `Session pooler`
+
 
 ---
 
@@ -64,9 +62,6 @@ Flutter App  ──→  AWS EC2 (Nginx + PHP-FPM + SSL)  ──→  Supabase (Po
 SSH ke EC2, clone repo, jalankan setup:
 
 ```bash
-# Mac/Linux: chmod 400 dulu
-chmod 400 your-key.pem
-
 # SSH ke server
 ssh -i "your-key.pem" ubuntu@YOUR_EC2_IP
 
