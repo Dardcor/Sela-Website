@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\AbilityController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\EtholController;
+
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\GroupMemberController;
 use App\Http\Controllers\Api\SubTaskAssignmentController;
@@ -83,4 +85,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('tasks/{taskId}/generations', [TaskGenerationController::class, 'store']);
     Route::get('task-generations/{id}', [TaskGenerationController::class, 'show']);
     Route::delete('task-generations/{id}', [TaskGenerationController::class, 'destroy']);
+
+    // ETHOL Integration
+    Route::prefix('ethol')->group(function () {
+        Route::post('login', [EtholController::class, 'login']);
+        Route::post('logout', [EtholController::class, 'logout']);
+        Route::get('schedule', [EtholController::class, 'schedule']);
+        Route::get('homework', [EtholController::class, 'homework']);
+        Route::get('attendance', [EtholController::class, 'attendance']);
+        Route::get('token', [EtholController::class, 'token']);
+    });
+
 });
