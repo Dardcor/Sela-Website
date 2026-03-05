@@ -109,13 +109,23 @@ class EtholService
      */
     public function saveSession(int $userId, string $etholToken, string $etholCookies): void
     {
-        UserEtholSession::updateOrCreate(
-            ['user_id' => $userId],
-            [
+        try {
+            UserEtholSession::updateOrCreate(
+                ['user_id' => $userId],
+                [
+                    'ethol_token'   => $etholToken,
+                    'ethol_cookies' => $etholCookies,
+                ]
+            );
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            // Stale row encrypted with a different APP_KEY — delete and recreate.
+            UserEtholSession::where('user_id', $userId)->delete();
+            UserEtholSession::create([
+                'user_id'       => $userId,
                 'ethol_token'   => $etholToken,
                 'ethol_cookies' => $etholCookies,
-            ]
-        );
+            ]);
+        }
     }
 
     /**
@@ -165,6 +175,14 @@ class EtholService
             throw new \Exception("No ETHOL session found for user {$userId}. Please log in first.");
         }
 
+        // Verify encrypted fields are still readable (APP_KEY may have changed).
+        try {
+            $session->ethol_token;
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            $session->delete();
+            throw new \Exception('ETHOL session expired or corrupted. Please log in again.');
+        }
+
         return $session;
     }
 
@@ -175,7 +193,16 @@ class EtholService
     {
         $session = UserEtholSession::where('user_id', $userId)->first();
 
-        return $session?->ethol_token;
+        if (! $session) {
+            return null;
+        }
+
+        try {
+            return $session->ethol_token;
+        } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+            $session->delete();
+            return null;
+        }
     }
 
     /**
