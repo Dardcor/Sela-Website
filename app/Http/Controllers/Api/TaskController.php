@@ -4,54 +4,43 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\TaskService;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
-    public function index(TaskService $service): JsonResponse
+
+    public function getByUser($user_id, TaskService $service)
     {
-        return response()->json($service->getAll());
+        $tasks = $service->getTasksByUser($user_id);
+
+        return response()->json([
+            "tasks" => $tasks
+        ]);
     }
 
-    public function store(Request $request, TaskService $service): JsonResponse
+    public function detail($task_id, $user_id, TaskService $service)
     {
-        $validated = $request->validate([
+        $data = $service->getTaskDetail($task_id, $user_id);
+
+        return response()->json($data);
+    }
+    public function store(Request $request, TaskService $service)
+    {
+
+        $request->validate([
             'title' => 'required|string|max:150',
-            'type' => 'nullable|string|max:50',
             'description' => 'nullable|string',
-            'deadline' => 'nullable|date',
+            'deadline' => 'required|date',
             'group_id' => 'required|exists:groups,id',
+            'link' => 'nullable|url',
+            'file' => 'nullable|file|max:5120'
         ]);
 
-        return response()->json($service->create($validated), 201);
-    }
+        $task = $service->createTask($request);
 
-    public function show(TaskService $service, int $id): JsonResponse
-    {
-        return response()->json($service->getById($id));
-    }
-
-    public function update(Request $request, TaskService $service, int $id): JsonResponse
-    {
-        $task = $service->getById($id);
-
-        $validated = $request->validate([
-            'title' => 'sometimes|required|string|max:150',
-            'type' => 'nullable|string|max:50',
-            'description' => 'nullable|string',
-            'deadline' => 'nullable|date',
-            'group_id' => 'sometimes|required|exists:groups,id',
-        ]);
-
-        return response()->json($service->update($task, $validated));
-    }
-
-    public function destroy(TaskService $service, int $id): JsonResponse
-    {
-        $task = $service->getById($id);
-        $service->delete($task);
-
-        return response()->json(null, 204);
+        return response()->json([
+            "message" => "Task created successfully",
+            "data" => $task
+        ], 201);
     }
 }
