@@ -30,11 +30,10 @@ class GroupController extends Controller
 
     public function store(Request $request, GroupService $service)
     {
-
         $request->validate([
-            'name' => 'required|string|max:100',
-            'course' => 'required|string',
-            'max_member' => 'required|integer'
+            'course' => 'required|string|max:100',
+            'max_member' => 'required|integer',
+            'number_group' => 'required|integer'
         ]);
 
         $group = $service->createGroup($request);

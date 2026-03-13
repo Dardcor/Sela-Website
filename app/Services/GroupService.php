@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Group;
 use App\Models\GroupMember;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -91,11 +92,18 @@ class GroupService
 
     public function createGroup($request)
     {
+        $user = User::find(auth()->id());
 
         $code = strtoupper(Str::random(6));
 
+        $groupName = $user->class
+            . "-" .
+            $request->course
+            . "-Kelompok "
+            . $request->number_group;
+
         $group = Group::create([
-            'name' => $request->name,
+            'name' => $groupName,
             'course' => $request->course,
             'max_member' => $request->max_member,
             'invitation_code' => $code
