@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AbilityController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EtholController;
 
+use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\GroupMemberController;
 use App\Http\Controllers\Api\SubTaskAssignmentController;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Route;
 | Public Routes
 |--------------------------------------------------------------------------
 */
+
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
 
@@ -37,6 +39,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
 
+    // Dashboard
+    Route::get('dashboard/{user_id}', [DashboardController::class, 'index']);
+
     // Users (no store — use register)
     Route::get('users', [UserController::class, 'index']);
     Route::get('users/{id}', [UserController::class, 'show']);
@@ -52,8 +57,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('user-abilities/{id}', [UserAbilityController::class, 'update']);
     Route::delete('user-abilities/{id}', [UserAbilityController::class, 'destroy']);
 
-    // Groups CRUD
-    Route::apiResource('groups', GroupController::class);
+    // Groups 
+    Route::get('/groups/user/{user_id}', [GroupController::class, 'getByUser']);
+    Route::get('/groups/{group_id}', [GroupController::class, 'detail']);
+    Route::post('/groups', [GroupController::class, 'store']);
+    Route::post('/groups/join', [GroupController::class, 'join']);
 
     // Group Members (nested under groups)
     Route::get('groups/{groupId}/members', [GroupMemberController::class, 'index']);
@@ -61,15 +69,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('group-members/{id}', [GroupMemberController::class, 'update']);
     Route::delete('groups/{groupId}/members/{userId}', [GroupMemberController::class, 'destroy']);
 
-    // Tasks CRUD
-    Route::apiResource('tasks', TaskController::class);
+    // Tasks 
+    Route::prefix('tasks')->group(function () {
+        Route::get('/user/{user_id}', [TaskController::class, 'getByUser']);
+        Route::get('/{task_id}/detail/{user_id}', [TaskController::class, 'detail']);
+        Route::post('/', [TaskController::class, 'store']);
+    });
 
-    // Sub Tasks (nested under tasks)
-    Route::get('tasks/{taskId}/sub-tasks', [SubTaskController::class, 'index']);
-    Route::post('tasks/{taskId}/sub-tasks', [SubTaskController::class, 'store']);
-    Route::get('sub-tasks/{id}', [SubTaskController::class, 'show']);
-    Route::put('sub-tasks/{id}', [SubTaskController::class, 'update']);
-    Route::delete('sub-tasks/{id}', [SubTaskController::class, 'destroy']);
+    //Sub Task
+    Route::post('/tasks/{task_id}/subtasks', [SubTaskController::class, 'store']);
+    Route::patch('subtasks/{subtask_id}/status', [SubTaskController::class, 'updateStatus']);
+    Route::delete('subtasks/{id}', [SubTaskController::class, 'destroy']);
 
     // Sub Task Assignments (nested under sub-tasks)
     Route::get('sub-tasks/{subTaskId}/assignments', [SubTaskAssignmentController::class, 'index']);
@@ -97,5 +107,4 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('attendance', [EtholController::class, 'attendance']);
         Route::get('token', [EtholController::class, 'token']);
     });
-
 });
