@@ -9,46 +9,57 @@ use Illuminate\Http\Request;
 
 class GroupController extends Controller
 {
-    public function index(GroupService $service): JsonResponse
+
+    public function getByUser(Request $request, $user_id, GroupService $service)
     {
-        return response()->json($service->getAll());
+        $search = $request->search;
+
+        $groups = $service->getGroupsByUser($user_id, $search);
+
+        return response()->json([
+            "groups" => $groups
+        ]);
     }
 
-    public function store(Request $request, GroupService $service): JsonResponse
+    public function detail($group_id, GroupService $service)
     {
-        $validated = $request->validate([
+        $group = $service->getGroupDetail($group_id);
+
+        return response()->json($group);
+    }
+
+    public function store(Request $request, GroupService $service)
+    {
+
+        $request->validate([
             'name' => 'required|string|max:100',
-            'course' => 'nullable|string|max:100',
-            'max_member' => 'nullable|integer|min:1',
-            'invitation_code' => 'nullable|string|max:20|unique:groups,invitation_code',
+            'course' => 'required|string',
+            'max_member' => 'required|integer'
         ]);
 
-        return response()->json($service->create($validated), 201);
+        $group = $service->createGroup($request);
+
+        return response()->json([
+            "message" => "Group created",
+            "data" => $group
+        ], 201);
     }
 
-    public function show(GroupService $service, int $id): JsonResponse
+    public function join(Request $request, GroupService $service)
     {
-        return response()->json($service->getById($id));
-    }
 
-    public function update(Request $request, GroupService $service, int $id): JsonResponse
-    {
-        $group = $service->getById($id);
-
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:100',
-            'course' => 'nullable|string|max:100',
-            'max_member' => 'nullable|integer|min:1',
+        $request->validate([
+            'code' => 'required|string'
         ]);
 
-        return response()->json($service->update($group, $validated));
-    }
+        $data = $service->joinGroup(
+            $request->code,
+            auth()->id()
+        );
 
-    public function destroy(GroupService $service, int $id): JsonResponse
-    {
-        $group = $service->getById($id);
-        $service->delete($group);
-
-        return response()->json(null, 204);
+        return response()->json([
+            "message" => "Join group success",
+            "data" => $data
+        ]);
     }
 }
