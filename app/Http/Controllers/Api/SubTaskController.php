@@ -4,56 +4,51 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Services\SubTaskService;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SubTaskController extends Controller
 {
-    public function index(SubTaskService $service, int $taskId): JsonResponse
-    {
-        return response()->json($service->getByTask($taskId));
-    }
+    protected $taskService;
 
-    public function store(Request $request, SubTaskService $service, int $taskId): JsonResponse
+   public function store(Request $request,$task_id,SubTaskService $service)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:150',
-            'description' => 'nullable|string',
-            'required_ability_id' => 'nullable|exists:abilities,id',
-            'generation_id' => 'nullable|exists:task_generations,id',
-            'status' => 'nullable|string',
+        $request->validate([
+            'name'=>'required|string|max:150',
+            'description'=>'nullable|string',
+            'user_id'=>'required|exists:users,id'
         ]);
 
-        $validated['task_id'] = $taskId;
+        $data = $service->createSubtask($task_id,$request);
 
-        return response()->json($service->create($validated), 201);
+        return response()->json([
+            "message"=>"Subtask created",
+            "data"=>$data
+        ],201);
     }
 
-    public function show(SubTaskService $service, int $id): JsonResponse
-    {
-        return response()->json($service->getById($id));
-    }
 
-    public function update(Request $request, SubTaskService $service, int $id): JsonResponse
+    public function updateStatus(Request $request,$subtask_id,SubTaskService $service)
     {
-        $subTask = $service->getById($id);
-
-        $validated = $request->validate([
-            'name' => 'sometimes|required|string|max:150',
-            'description' => 'nullable|string',
-            'required_ability_id' => 'nullable|exists:abilities,id',
-            'generation_id' => 'nullable|exists:task_generations,id',
-            'status' => 'nullable|string',
+        $request->validate([
+            'status'=>'required|in:pending,in_progress,done,upcoming'
         ]);
 
-        return response()->json($service->update($subTask, $validated));
+        $data = $service->updateSubtaskStatus($subtask_id,$request->status);
+
+        return response()->json([
+            "message"=>"Status updated",
+            "data"=>$data
+        ]);
     }
 
-    public function destroy(SubTaskService $service, int $id): JsonResponse
+
+    public function destroy($subtask_id,SubTaskService $service)
     {
-        $subTask = $service->getById($id);
-        $service->delete($subTask);
+        $service->delete($subtask_id);
 
-        return response()->json(null, 204);
+        return response()->json([
+            "message"=>"Subtask deleted"
+        ]);
     }
+
 }

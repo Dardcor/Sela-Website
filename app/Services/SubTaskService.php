@@ -3,33 +3,49 @@
 namespace App\Services;
 
 use App\Models\SubTask;
-use Illuminate\Database\Eloquent\Collection;
+use App\Models\SubTaskAssignment;
 
 class SubTaskService
 {
-    public function getByTask(int $taskId): Collection
+    public function createSubtask($task_id, $request)
     {
-        return SubTask::with(['requiredAbility', 'generation'])->where('task_id', $taskId)->get();
+
+        $subtask = SubTask::create([
+            'name' => $request->name,
+            'description' => $request->description,
+            'task_id' => $task_id,
+            'status' => 'pending'
+        ]);
+
+        SubTaskAssignment::create([
+            'sub_task_id' => $subtask->id,
+            'user_id' => $request->user_id,
+            'role' => 'assignee',
+            'status' => 'assigned'
+        ]);
+
+        return $subtask;
     }
 
-    public function getById(int $id): SubTask
+
+    public function updateSubtaskStatus($subtask_id, $status)
     {
-        return SubTask::findOrFail($id);
+        $subtask = SubTask::findOrFail($subtask_id);
+
+        $subtask->update([
+            'status' => $status
+        ]);
+
+        return $subtask;
     }
 
-    public function create(array $data): SubTask
-    {
-        return SubTask::create($data);
-    }
 
-    public function update(SubTask $subTask, array $data): SubTask
+    public function delete($subtask_id)
     {
-        $subTask->update($data);
-        return $subTask->fresh();
-    }
+        $subtask = SubTask::findOrFail($subtask_id);
 
-    public function delete(SubTask $subTask): bool
-    {
-        return $subTask->delete();
+        $subtask->delete();
+
+        return true;
     }
 }
