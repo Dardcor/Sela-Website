@@ -57,6 +57,13 @@ return new class extends Migration
             DROP TABLE IF EXISTS public.abilities CASCADE;
             DROP TABLE IF EXISTS public.user_ethol_sessions CASCADE;
             DROP TABLE IF EXISTS public.users CASCADE;
+            DROP TABLE IF EXISTS public.personal_access_tokens CASCADE;
+            DROP TABLE IF EXISTS public.sessions CASCADE;
+            DROP TABLE IF EXISTS public.cache_locks CASCADE;
+            DROP TABLE IF EXISTS public.cache CASCADE;
+            DROP TABLE IF EXISTS public.job_batches CASCADE;
+            DROP TABLE IF EXISTS public.failed_jobs CASCADE;
+            DROP TABLE IF EXISTS public.jobs CASCADE;
         SQL);
 
         DB::unprepared(file_get_contents($schemaPath));
@@ -103,6 +110,13 @@ return new class extends Migration
             DROP TABLE IF EXISTS public.classes CASCADE;
             DROP TABLE IF EXISTS public.courses CASCADE;
             DROP TABLE IF EXISTS public.profiles CASCADE;
+            DROP TABLE IF EXISTS public.personal_access_tokens CASCADE;
+            DROP TABLE IF EXISTS public.sessions CASCADE;
+            DROP TABLE IF EXISTS public.cache_locks CASCADE;
+            DROP TABLE IF EXISTS public.cache CASCADE;
+            DROP TABLE IF EXISTS public.job_batches CASCADE;
+            DROP TABLE IF EXISTS public.failed_jobs CASCADE;
+            DROP TABLE IF EXISTS public.jobs CASCADE;
         SQL);
     }
 

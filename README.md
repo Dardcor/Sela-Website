@@ -1,534 +1,342 @@
 # Sela-Website
 
-Backend API for the Sela project management platform. Built with Laravel 12, Sanctum auth, and PostgreSQL (Supabase).
+Laravel 12 backend for the Sela project management platform. The current repo is configured around **Supabase PostgreSQL** and **Laravel Sanctum**.
+
+> Status note: this repository still contains some legacy controller/service naming (`UserAbility`, `SubTask`, `SupportFile`, etc.), but the active PostgreSQL schema is imported from `db.sql` through `database/migrations/2026_04_07_150000_apply_supabase_schema_from_db_sql.php`.
 
 **Production:** `https://dardcor.acalypha.my.id/api`
 
 ## Tech Stack
 
-- **Framework:** Laravel 12 (PHP 8.5)
-- **Auth:** Laravel Sanctum (Bearer Token)
+- **Framework:** Laravel 12
+- **PHP:** `^8.2`
+- **Auth:** Laravel Sanctum bearer tokens
 - **Database:** PostgreSQL via Supabase
-- **Server:** AWS EC2 + Nginx + PHP-FPM + Let's Encrypt SSL
-- **ETHOL Integration:** PENS CAS authentication for student login
+- **Frontend assets:** Vite
+- **Deployment:** AWS EC2 + Nginx + PHP-FPM + Let's Encrypt
+- **ETHOL Integration:** PENS academic portal login flow
 
-## Getting Started
+## Project Structure
+
+- `routes/api.php` — active API routes
+- `app/Http/Controllers/Api` — API controllers
+- `app/Models` — current Eloquent models
+- `db.sql` — source schema imported for PostgreSQL/Supabase
+- `database/migrations/2026_04_07_150000_apply_supabase_schema_from_db_sql.php` — applies `db.sql`
+- `deploy/` — deployment scripts and Nginx config
+
+## Local Setup
 
 ```bash
-# Clone
-cd Sela-Website
-
-# Install
 composer install
-
-# Configure
 cp .env.example .env
-# Edit .env with your DB credentials
 php artisan key:generate
+```
 
-# Migrate & serve
+Set your database config in `.env`.
+
+### Supabase / PostgreSQL example
+
+Use either discrete variables:
+
+```env
+DB_CONNECTION=pgsql
+DB_HOST=aws-1-ap-southeast-1.pooler.supabase.com
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USERNAME=postgres.YOUR_PROJECT_REF
+DB_PASSWORD=your-password
+DB_SSLMODE=require
+```
+
+Or pooled connection URL:
+
+```env
+DB_CONNECTION=pgsql
+DB_URL=postgresql://postgres.YOUR_PROJECT_REF:YOUR_PASSWORD@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
+DB_SSLMODE=require
+```
+
+Then run:
+
+```bash
 php artisan migrate
 php artisan serve
 ```
 
+### Frontend assets
+
+This repo includes Vite assets. If you change frontend files, run:
+
+```bash
+npm install
+npm run build
+```
+
+> `public/build/` may already be present in the repo, so asset build is not always required just to boot the backend.
+
 ## Authentication
 
-All endpoints except `POST /api/register`, `POST /api/login`, and `POST /api/ethol/login` require a Bearer token.
+Public routes:
 
-**Headers (all requests):**
+- `POST /api/register`
+- `POST /api/login`
+- `POST /api/ethol/login`
+
+All other API routes are protected by `auth:sanctum`.
+
+Typical headers:
+
 | Header | Value |
-|--------|-------|
+|---|---|
 | `Accept` | `application/json` |
 | `Authorization` | `Bearer {token}` |
 
-For `POST`/`PUT` requests, add `Content-Type: application/json`.
+## API Routes
 
-**HTTP Status Codes:**
-| Code | Description |
-|------|-------------|
-| `200` | OK |
-| `201` | Created |
-| `204` | No Content (deleted) |
-| `401` | Unauthorized |
-| `404` | Not Found |
-| `422` | Validation Error |
-
----
-
-## API Reference
+This section reflects the current `routes/api.php` file.
 
 ### Auth
 
-#### `POST /api/register`
+| Method | Endpoint |
+|---|---|
+| `POST` | `/api/register` |
+| `POST` | `/api/login` |
+| `POST` | `/api/logout` |
+| `GET` | `/api/me` |
 
-**Auth:** Not Required
+### Dashboard
 
-| Field | Type | Required | Validation |
-|-------|------|----------|------------|
-| username | string | Yes | max:50 |
-| email | string | Yes | email, max:100, unique |
-| password | string | Yes | min:6 |
-| class | string | No | max:100 |
-| role | string | No | max:50 |
-
-**Response:** `201`
-```json
-{
-  "user": {
-    "id": 1,
-    "username": "johndoe",
-    "email": "john@example.com",
-    "class": "IF-2022",
-    "role": "student",
-    "created_at": "2024-03-05T00:00:00.000000Z",
-    "updated_at": "2024-03-05T00:00:00.000000Z"
-  },
-  "token": "1|abcdef123456"
-}
-```
-
-#### `POST /api/login`
-
-**Auth:** Not Required
-
-| Field | Type | Required |
-|-------|------|----------|
-| email | string | Yes |
-| password | string | Yes |
-
-**Response:** `200` — same shape as register.
-
-#### `POST /api/logout`
-
-**Auth:** Required
-
-**Response:** `200`
-```json
-{ "message": "Logged out successfully." }
-```
-
-#### `GET /api/me`
-
-**Auth:** Required
-
-**Response:** `200` — user object.
-
----
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/dashboard/{user_id}` |
 
 ### Users
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/users` | Yes | List all users |
-| `GET` | `/api/users/{id}` | Yes | Get user by ID |
-| `PUT` | `/api/users/{id}` | Yes | Update user |
-| `DELETE` | `/api/users/{id}` | Yes | Delete user (`204`) |
-
-**Update fields:** `username`, `email`, `password`, `class`, `role` (all optional).
-
----
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/users` |
+| `GET` | `/api/users/{id}` |
+| `PUT` | `/api/users/{id}` |
+| `DELETE` | `/api/users/{id}` |
 
 ### Abilities
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/abilities` | Yes | List all abilities |
-| `POST` | `/api/abilities` | Yes | Create ability |
-| `GET` | `/api/abilities/{ability}` | Yes | Get ability |
-| `PUT` | `/api/abilities/{ability}` | Yes | Update ability |
-| `DELETE` | `/api/abilities/{ability}` | Yes | Delete ability (`204`) |
-
-**Body:** `{ "name": "Backend Development" }`
-
----
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/abilities` |
+| `POST` | `/api/abilities` |
+| `GET` | `/api/abilities/{ability}` |
+| `PUT/PATCH` | `/api/abilities/{ability}` |
+| `DELETE` | `/api/abilities/{ability}` |
 
 ### User Abilities
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/users/{userId}/abilities` | Yes | List user's abilities |
-| `POST` | `/api/users/{userId}/abilities` | Yes | Assign ability to user |
-| `PUT` | `/api/user-abilities/{id}` | Yes | Update level |
-| `DELETE` | `/api/user-abilities/{id}` | Yes | Remove ability (`204`) |
-
-**Assign body:**
-| Field | Type | Required |
-|-------|------|----------|
-| ability_id | integer | Yes |
-| level | integer | No (default 0) |
-
----
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/users/{userId}/abilities` |
+| `POST` | `/api/users/{userId}/abilities` |
+| `PUT` | `/api/user-abilities/{id}` |
+| `DELETE` | `/api/user-abilities/{id}` |
 
 ### Groups
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/groups` | Yes | List all groups |
-| `POST` | `/api/groups` | Yes | Create group |
-| `GET` | `/api/groups/{group}` | Yes | Get group |
-| `PUT` | `/api/groups/{group}` | Yes | Update group |
-| `DELETE` | `/api/groups/{group}` | Yes | Delete group (`204`) |
-
-**Create body:**
-| Field | Type | Required |
-|-------|------|----------|
-| name | string | Yes |
-| course | string | No |
-| max_member | integer | No |
-| invitation_code | string | No |
-
----
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/groups/user/{user_id}` |
+| `GET` | `/api/groups/{group_id}` |
+| `POST` | `/api/groups` |
+| `POST` | `/api/groups/join` |
 
 ### Group Members
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/groups/{groupId}/members` | Yes | List members |
-| `POST` | `/api/groups/{groupId}/members` | Yes | Add member |
-| `PUT` | `/api/group-members/{id}` | Yes | Update role |
-| `DELETE` | `/api/groups/{groupId}/members/{userId}` | Yes | Remove member (`204`) |
-
-**Add body:** `{ "user_id": 2, "role": "member" }`
-
----
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/groups/{groupId}/members` |
+| `POST` | `/api/groups/{groupId}/members` |
+| `PUT` | `/api/group-members/{id}` |
+| `DELETE` | `/api/groups/{groupId}/members/{userId}` |
 
 ### Tasks
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/tasks` | Yes | List all tasks |
-| `POST` | `/api/tasks` | Yes | Create task |
-| `GET` | `/api/tasks/{task}` | Yes | Get task |
-| `PUT` | `/api/tasks/{task}` | Yes | Update task |
-| `DELETE` | `/api/tasks/{task}` | Yes | Delete task (`204`) |
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/tasks/user/{user_id}` |
+| `GET` | `/api/tasks/{task_id}/detail/{user_id}` |
+| `POST` | `/api/tasks` |
 
-**Create body:**
-| Field | Type | Required |
-|-------|------|----------|
-| title | string | Yes |
-| type | string | No |
-| description | string | No |
-| deadline | date | No |
-| group_id | integer | Yes |
+### Subtasks
 
----
+| Method | Endpoint |
+|---|---|
+| `POST` | `/api/tasks/{task_id}/subtasks` |
+| `PATCH` | `/api/subtasks/{subtask_id}/status` |
+| `DELETE` | `/api/subtasks/{id}` |
 
-### Sub Tasks
+### Subtask Assignments
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/tasks/{taskId}/sub-tasks` | Yes | List sub tasks |
-| `POST` | `/api/tasks/{taskId}/sub-tasks` | Yes | Create sub task |
-| `GET` | `/api/sub-tasks/{id}` | Yes | Get sub task |
-| `PUT` | `/api/sub-tasks/{id}` | Yes | Update sub task |
-| `DELETE` | `/api/sub-tasks/{id}` | Yes | Delete sub task (`204`) |
-
-**Create body:**
-| Field | Type | Required |
-|-------|------|----------|
-| name | string | Yes |
-| description | string | No |
-| required_ability_id | integer | No |
-| generation_id | integer | No |
-| status | string | No |
-
----
-
-### Sub Task Assignments
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/sub-tasks/{subTaskId}/assignments` | Yes | List assignments |
-| `POST` | `/api/sub-tasks/{subTaskId}/assignments` | Yes | Assign user |
-| `PUT` | `/api/sub-task-assignments/{id}` | Yes | Update assignment |
-| `DELETE` | `/api/sub-task-assignments/{id}` | Yes | Remove assignment (`204`) |
-
-**Assign body:** `{ "user_id": 1, "role": "assignee", "status": "active" }`
-
----
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/sub-tasks/{subTaskId}/assignments` |
+| `POST` | `/api/sub-tasks/{subTaskId}/assignments` |
+| `PUT` | `/api/sub-task-assignments/{id}` |
+| `DELETE` | `/api/sub-task-assignments/{id}` |
 
 ### Support Files
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/tasks/{taskId}/files` | Yes | List files |
-| `POST` | `/api/tasks/{taskId}/files` | Yes | Upload file (`multipart/form-data`) |
-| `GET` | `/api/support-files/{id}` | Yes | Get file metadata |
-| `DELETE` | `/api/support-files/{id}` | Yes | Delete file (`204`) |
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/tasks/{taskId}/files` |
+| `POST` | `/api/tasks/{taskId}/files` |
+| `GET` | `/api/support-files/{id}` |
+| `DELETE` | `/api/support-files/{id}` |
 
-**Upload:** `file` field, max 10MB.
+### Task Generations
 
----
+| Method | Endpoint |
+|---|---|
+| `GET` | `/api/tasks/{taskId}/generations` |
+| `POST` | `/api/tasks/{taskId}/generations` |
+| `GET` | `/api/task-generations/{id}` |
+| `DELETE` | `/api/task-generations/{id}` |
 
-### Task Generations (AI)
+### ETHOL
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/tasks/{taskId}/generations` | Yes | List generations |
-| `POST` | `/api/tasks/{taskId}/generations` | Yes | Store generation |
-| `GET` | `/api/task-generations/{id}` | Yes | Get generation |
-| `DELETE` | `/api/task-generations/{id}` | Yes | Delete generation (`204`) |
-
-**Create body:**
-| Field | Type | Required |
-|-------|------|----------|
-| prompt | string | Yes |
-| ai_response | string | No |
-| model | string | No |
-| version | integer | No |
-
----
-
-### ETHOL (PENS CAS)
-
-#### `POST /api/ethol/login`
-
-**Auth:** Not Required — alternative login via PENS CAS. Auto-creates user account if needed. Returns Sanctum token.
-
-| Field | Type | Required |
-|-------|------|----------|
-| email | string | Yes |
-| password | string | Yes |
-
-**Response:** `200`
-```json
-{
-  "user": {
-    "id": 1,
-    "username": "Fahroldhi Sukirno",
-    "email": "fahroldhisukirno@it.student.pens.ac.id",
-    "class": null,
-    "role": "student",
-    "created_at": "2024-03-05T00:00:00.000000Z",
-    "updated_at": "2024-03-05T00:00:00.000000Z"
-  },
-  "token": "1|abcdef123456"
-}
-```
-
-#### Other ETHOL Endpoints (Auth Required)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/ethol/logout` | Clear ETHOL session |
-| `GET` | `/api/ethol/schedule` | Get course schedule |
-| `GET` | `/api/ethol/homework` | Get homework list |
-| `GET` | `/api/ethol/attendance` | Get attendance summary |
-| `GET` | `/api/ethol/token` | Get stored ETHOL JWT |
-
----
+| Method | Endpoint |
+|---|---|
+| `POST` | `/api/ethol/login` |
+| `POST` | `/api/ethol/logout` |
+| `GET` | `/api/ethol/schedule` |
+| `GET` | `/api/ethol/homework` |
+| `GET` | `/api/ethol/attendance` |
+| `GET` | `/api/ethol/token` |
 
 ## Database Schema
 
-### `users`
-| Column | Type |
-|--------|------|
-| id | bigint (PK) |
-| username | varchar(50) |
-| email | varchar(100), unique |
-| password | varchar(255) |
-| class | varchar(100), nullable |
-| role | varchar(50), nullable |
+For PostgreSQL/Supabase, the effective schema is the SQL file at the project root:
 
-### `abilities`
-| Column | Type |
-|--------|------|
-| id | bigint (PK) |
-| name | varchar(50) |
+- `db.sql`
 
-### `user_abilities`
-| Column | Type |
-|--------|------|
-| id | bigint (PK) |
-| user_id | FK → users |
-| ability_id | FK → abilities |
-| level | int, default 0 |
+It is applied by:
 
-### `groups`
-| Column | Type |
-|--------|------|
-| id | bigint (PK) |
-| name | varchar(100) |
-| course | varchar(100), nullable |
-| max_member | int |
-| invitation_code | varchar(20), unique |
+- `database/migrations/2026_04_07_150000_apply_supabase_schema_from_db_sql.php`
 
-### `group_members`
-| Column | Type |
-|--------|------|
-| id | bigint (PK) |
-| user_id | FK → users |
-| group_id | FK → groups |
-| role | varchar |
-| joined_at | timestamp |
+### Main tables in `db.sql`
 
-### `tasks`
-| Column | Type |
-|--------|------|
-| id | bigint (PK) |
-| title | varchar(150) |
-| type | varchar(50) |
-| description | text |
-| deadline | timestamp |
-| group_id | FK → groups |
+- `profiles`
+- `courses`
+- `classes`
+- `groups`
+- `group_members`
+- `tasks`
+- `subtasks`
+- `subtask_progress`
+- `task_links`
+- `task_files`
+- `profile_abilities`
+- `notifications`
 
-### `sub_tasks`
-| Column | Type |
-|--------|------|
-| id | bigint (PK) |
-| name | varchar(150) |
-| task_id | FK → tasks |
-| description | text |
-| required_ability_id | FK → abilities |
-| generation_id | FK → task_generations |
-| status | varchar |
+### Schema notes
 
-### `sub_task_assignments`
-| Column | Type |
-|--------|------|
-| id | bigint (PK) |
-| sub_task_id | FK → sub_tasks |
-| user_id | FK → users |
-| role | varchar |
-| status | varchar |
+- IDs are mostly UUIDs
+- `profiles.id` references `auth.users`
+- storage policies depend on Supabase `storage.objects` and `storage.buckets`
+- several RLS policies depend on Supabase `auth.uid()`
+- the migration imports trigger/function definitions from `db.sql`
 
-### `task_generations`
-| Column | Type |
-|--------|------|
-| id | bigint (PK) |
-| task_id | FK → tasks |
-| generated_by | FK → users |
-| prompt | text |
-| ai_response | text |
-| model | varchar(50) |
-| version | int |
+## Current Models
 
-### `support_files`
-| Column | Type |
-|--------|------|
-| id | bigint (PK) |
-| file_name | varchar(255) |
-| file_path | varchar(255) |
-| task_id | FK → tasks |
-| uploaded_by | FK → users |
+The active Eloquent models currently present in `app/Models` are:
 
-### `user_ethol_sessions`
-| Column | Type |
-|--------|------|
-| id | bigint (PK) |
-| user_id | FK → users |
-| ethol_token | text, encrypted |
-| ethol_cookies | text, encrypted |
+- `User`
+- `Profile`
+- `Course`
+- `SchoolClass`
+- `Group`
+- `GroupMember`
+- `Task`
+- `Subtask`
+- `SubtaskProgress`
+- `TaskFile`
+- `TaskLink`
+- `ProfileAbility`
+- `Notification`
 
-### `password_resets`
-| Column | Type |
-|--------|------|
-| id | bigint (PK) |
-| user_id | FK → users |
-| token | varchar(255) |
-| expires_at | timestamp |
+## Known Repo Caveat
 
-### `user_sessions`
-| Column | Type |
-|--------|------|
-| id | bigint (PK) |
-| user_id | FK → users |
-| ip_address | varchar(45) |
-| user_agent | text |
-| login_at | timestamp |
-| revoked_at | timestamp |
+This repo is in a transition state:
 
----
+- the **database schema** and **models** already point toward the Supabase/UUID structure
+- some **route names**, **controller names**, and **service names** still reflect the older Laravel schema terminology
 
-## Architecture
+If documentation and implementation ever disagree, use these as the source of truth in order:
 
-```
-Flutter / Web Client
-       |
-       v
-  routes/api.php (Sanctum Middleware)
-       |
-       v
-  Controllers (Auth, User, Group, Task, ETHOL, etc.)
-       |
-       v
-  Services (Business Logic)
-       |
-       v
-  Eloquent Models & PostgreSQL (Supabase)
-```
-
----
+1. `routes/api.php`
+2. `db.sql`
+3. `database/migrations/2026_04_07_150000_apply_supabase_schema_from_db_sql.php`
+4. `app/Models`
 
 ## Deployment
 
-Deploy to AWS EC2 with Supabase (PostgreSQL) and HTTPS via Let's Encrypt.
+Deploy target: AWS EC2 + Nginx + PHP-FPM + Supabase PostgreSQL.
 
-```
-Flutter App  →  AWS EC2 (Nginx + PHP-FPM + SSL)  →  Supabase (PostgreSQL)
-```
-
-### Quick Start
+### Server bootstrap
 
 ```bash
-# 1. SSH into server
 ssh -i "your-key.pem" ubuntu@YOUR_EC2_IP
-
-# 2. Clone
 sudo git clone -b backend https://github.com/Dardcor/Sela-Website.git /var/www/sela-website
-
-# 3. Install system packages (PHP, Nginx, Composer, Certbot)
 sudo bash /var/www/sela-website/deploy/setup-server.sh
+```
 
-# 4. Configure environment
+### Environment
+
+```bash
 cd /var/www/sela-website
 sudo cp .env.example .env
-sudo nano .env    # Set DB_URL, APP_URL, etc.
-
-# 5. Deploy (composer install, migrate, cache, nginx)
-sudo bash deploy/deploy.sh
-
-# 6. Setup SSL
-sudo bash deploy/setup-ssl.sh
-
-# Done → https://dardcor.acalypha.my.id/api
+sudo nano .env
 ```
 
-### Updating
+Minimum important settings:
+
+```env
+APP_URL=https://your-domain.example
+DB_CONNECTION=pgsql
+DB_HOST=...
+DB_PORT=5432
+DB_DATABASE=postgres
+DB_USERNAME=...
+DB_PASSWORD=...
+DB_SSLMODE=require
+```
+
+### Deploy
 
 ```bash
-ssh -i "your-key.pem" ubuntu@YOUR_EC2_IP
-sudo bash /var/www/sela-website/deploy/deploy.sh
+sudo bash deploy/deploy.sh
+sudo bash deploy/setup-ssl.sh
 ```
 
-### Deploy Scripts
+### What `deploy.sh` does
 
-```
-deploy/
-├── nginx/
-│   └── sela-website.conf   # Nginx config
-├── setup-server.sh          # Install system packages (once)
-├── setup-ssl.sh             # Setup Let's Encrypt SSL (once)
-└── deploy.sh                # Deploy app (every update)
-```
+- validates `.env`
+- pulls the `backend` branch
+- runs Composer install
+- runs migrations
+- creates storage symlink
+- clears/builds Laravel caches
+- fixes permissions
+- reloads Nginx and restarts PHP-FPM
 
-### Troubleshooting
+## Troubleshooting
 
 | Issue | Fix |
-|-------|-----|
+|---|---|
 | 502 Bad Gateway | `sudo systemctl restart php8.2-fpm` |
-| Permission denied | `sudo chown -R www-data:www-data /var/www/sela-website/storage` |
-| DB connection refused | Check Security Group (outbound 5432) + `.env` credentials |
-| Supabase paused | Dashboard → click "Unpause" |
+| Wrong database selected | ensure `DB_CONNECTION=pgsql` is set |
+| Supabase connection refused | verify host, username, password, SSL mode, and whether project is paused |
+| Migration fails on Supabase objects | confirm `auth.users`, `storage.objects`, and `storage.buckets` exist in the target project |
 | SSL expired | `sudo certbot renew` |
 
 ```bash
-# Check Laravel logs
 tail -f /var/www/sela-website/storage/logs/laravel.log
 ```
-
-### Notes
-
-- **AWS Free Tier**: 750 hrs/month EC2 free for 12 months.
-- **Supabase Free Tier**: 500MB max, auto-pauses after 7 days inactive.
-- **SSL**: 90-day certs, auto-renewed every 60 days by Certbot.
