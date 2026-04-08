@@ -6,33 +6,35 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class GroupMember extends Model
+class SubtaskProgress extends Model
 {
     use HasUuids;
 
-    public $timestamps = false;
+    public const CREATED_AT = null;
+
+    protected $table = 'subtask_progress';
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
-        'group_id',
+        'subtask_id',
         'user_id',
-        'role',
-        'joined_at',
+        'progress',
     ];
 
     protected function casts(): array
     {
         return [
-            'joined_at' => 'datetime',
+            'progress' => 'integer',
+            'updated_at' => 'datetime',
         ];
     }
 
-    public function group(): BelongsTo
+    public function subtask(): BelongsTo
     {
-        return $this->belongsTo(Group::class);
+        return $this->belongsTo(Subtask::class);
     }
 
     public function user(): BelongsTo

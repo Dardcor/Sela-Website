@@ -2,24 +2,44 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Task extends Model
 {
+    use HasUuids;
+
+    public const UPDATED_AT = null;
+
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+
     protected $fillable = [
         'title',
-        'type',
         'description',
-        'deadline',
+        'category',
+        'subject',
+        'start_date',
+        'due_date',
+        'is_group',
         'group_id',
+        'created_by',
+        'status',
+        'priority',
+        'link',
+        'file_path',
     ];
 
     protected function casts(): array
     {
         return [
-            'deadline' => 'datetime',
+            'start_date' => 'datetime',
+            'due_date' => 'datetime',
+            'is_group' => 'boolean',
+            'created_at' => 'datetime',
         ];
     }
 
@@ -28,18 +48,23 @@ class Task extends Model
         return $this->belongsTo(Group::class);
     }
 
-    public function subTasks(): HasMany
+    public function creator(): BelongsTo
     {
-        return $this->hasMany(SubTask::class);
+        return $this->belongsTo(Profile::class, 'created_by');
     }
 
-    public function supportFiles(): HasMany
+    public function subtasks(): HasMany
     {
-        return $this->hasMany(SupportFile::class);
+        return $this->hasMany(Subtask::class);
     }
 
-    public function generations(): HasMany
+    public function taskLinks(): HasMany
     {
-        return $this->hasMany(TaskGeneration::class);
+        return $this->hasMany(TaskLink::class);
+    }
+
+    public function taskFiles(): HasMany
+    {
+        return $this->hasMany(TaskFile::class);
     }
 }

@@ -4,10 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Subtask extends Model
+class Course extends Model
 {
     use HasUuids;
 
@@ -18,8 +16,7 @@ class Subtask extends Model
     public $incrementing = false;
 
     protected $fillable = [
-        'task_id',
-        'title',
+        'name',
         'description',
     ];
 
@@ -28,15 +25,5 @@ class Subtask extends Model
         return [
             'created_at' => 'datetime',
         ];
-    }
-
-    public function task(): BelongsTo
-    {
-        return $this->belongsTo(Task::class);
-    }
-
-    public function progressEntries(): HasMany
-    {
-        return $this->hasMany(SubtaskProgress::class, 'subtask_id');
     }
 }

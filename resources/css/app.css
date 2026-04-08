@@ -6,6 +6,111 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-mono: 'Rubik Mono One', ui-monospace, monospace;
+
+    --color-cyan: #09637E;
+    --color-cyan-light: #0a7a9e;
+    --color-cyan-bright: #06A3CC;
+    --color-muted: #666666;
+
+    --shadow-neo: 6px 6px 0px #000000;
+    --shadow-neo-hover: 12px 12px 0px #000000;
+    --shadow-neo-cyan: 6px 6px 0px #09637E;
+}
+
+@layer base {
+    *, *::before, *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        font-family: var(--font-sans);
+        color: #000;
+        background: #fff;
+        line-height: 1.5;
+        overflow-x: hidden;
+        padding-top: 84px;
+    }
+
+    h1, h2, h3 {
+        font-family: var(--font-mono);
+        font-weight: 400;
+        text-transform: uppercase;
+        line-height: 1.1;
+    }
+
+    a {
+        text-decoration: none;
+        color: inherit;
+    }
+}
+
+@layer components {
+    .navbar-wrap.scrolled {
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 8px 8px 0px #000;
+    }
+
+    .faq-item.open .faq-icon {
+        transform: rotate(45deg);
+    }
+
+    .faq-item.open .faq-a {
+        max-height: 300px;
+    }
+
+    .reveal {
+        opacity: 0;
+        transform: translateY(60px);
+        transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    .reveal.active {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .d1 { transition-delay: 0.1s; }
+    .d2 { transition-delay: 0.2s; }
+    .d3 { transition-delay: 0.3s; }
+    .d4 { transition-delay: 0.4s; }
+}
+
+@keyframes shimmer {
+    to { background-position: 200% center; }
+}
+
+@keyframes grid-move {
+    100% { background-position: 50px 50px; }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+}
+
+@keyframes blob-pulse {
+    to { transform: scale(1.25); opacity: 0.55; }
+}
+
+@keyframes phone-float {
+    0%, 100% { transform: translateY(0) rotateX(5deg) rotateY(-12deg); }
+    50% { transform: translateY(-28px) rotateX(9deg) rotateY(-4deg); box-shadow: 24px 56px 80px rgba(9, 99, 126, 0.6); }
+}
+
+@keyframes fbob {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50% { transform: translateY(-18px) rotate(4deg); }
+}
+
+@keyframes progress-anim {
+    from { width: 45%; }
+    to { width: 72%; }
 }

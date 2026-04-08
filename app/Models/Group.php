@@ -2,17 +2,45 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Group extends Model
 {
+    use HasUuids;
+
+    public const UPDATED_AT = null;
+
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+
     protected $fillable = [
         'name',
-        'course',
-        'max_member',
+        'course_name',
+        'class_name',
+        'group_number',
+        'member_limit',
         'invitation_code',
+        'lecture_code',
+        'created_by',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'group_number' => 'integer',
+            'member_limit' => 'integer',
+            'created_at' => 'datetime',
+        ];
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(Profile::class, 'created_by');
+    }
 
     public function members(): HasMany
     {

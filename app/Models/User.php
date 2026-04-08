@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -31,9 +32,9 @@ class User extends Authenticatable
         ];
     }
 
-    public function abilities(): HasMany
+    public function profile(): HasOne
     {
-        return $this->hasMany(UserAbility::class);
+        return $this->hasOne(Profile::class);
     }
 
     public function groups(): HasMany
@@ -41,33 +42,23 @@ class User extends Authenticatable
         return $this->hasMany(GroupMember::class);
     }
 
-    public function subTaskAssignments(): HasMany
+    public function createdGroups(): HasMany
     {
-        return $this->hasMany(SubTaskAssignment::class);
+        return $this->hasMany(Group::class, 'created_by');
     }
 
-    public function uploadedFiles(): HasMany
+    public function createdTasks(): HasMany
     {
-        return $this->hasMany(SupportFile::class, 'uploaded_by');
+        return $this->hasMany(Task::class, 'created_by');
     }
 
-    public function taskGenerations(): HasMany
+    public function taskFiles(): HasMany
     {
-        return $this->hasMany(TaskGeneration::class, 'generated_by');
+        return $this->hasMany(TaskFile::class, 'uploaded_by');
     }
 
-    public function passwordResets(): HasMany
+    public function memberGroups(): BelongsToMany
     {
-        return $this->hasMany(PasswordReset::class);
-    }
-
-    public function userSessions(): HasMany
-    {
-        return $this->hasMany(UserSession::class);
-    }
-
-    public function etholSession(): HasOne
-    {
-        return $this->hasOne(UserEtholSession::class);
+        return $this->belongsToMany(Group::class, 'group_members', 'user_id', 'group_id');
     }
 }

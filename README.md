@@ -16,7 +16,6 @@ Backend API for the Sela project management platform. Built with Laravel 12, San
 
 ```bash
 # Clone
-git clone -b backend https://github.com/Dardcor/Sela-Website.git
 cd Sela-Website
 
 # Install

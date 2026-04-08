@@ -5,9 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Subtask extends Model
+class TaskFile extends Model
 {
     use HasUuids;
 
@@ -19,13 +18,17 @@ class Subtask extends Model
 
     protected $fillable = [
         'task_id',
-        'title',
-        'description',
+        'file_name',
+        'file_path',
+        'file_type',
+        'file_size',
+        'uploaded_by',
     ];
 
     protected function casts(): array
     {
         return [
+            'file_size' => 'integer',
             'created_at' => 'datetime',
         ];
     }
@@ -35,8 +38,8 @@ class Subtask extends Model
         return $this->belongsTo(Task::class);
     }
 
-    public function progressEntries(): HasMany
+    public function uploader(): BelongsTo
     {
-        return $this->hasMany(SubtaskProgress::class, 'subtask_id');
+        return $this->belongsTo(Profile::class, 'uploaded_by');
     }
 }

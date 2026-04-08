@@ -6,33 +6,31 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class GroupMember extends Model
+class Notification extends Model
 {
     use HasUuids;
 
-    public $timestamps = false;
+    public const UPDATED_AT = null;
 
     protected $keyType = 'string';
 
     public $incrementing = false;
 
     protected $fillable = [
-        'group_id',
         'user_id',
-        'role',
-        'joined_at',
+        'title',
+        'message',
+        'type',
+        'related_id',
+        'is_read',
     ];
 
     protected function casts(): array
     {
         return [
-            'joined_at' => 'datetime',
+            'is_read' => 'boolean',
+            'created_at' => 'datetime',
         ];
-    }
-
-    public function group(): BelongsTo
-    {
-        return $this->belongsTo(Group::class);
     }
 
     public function user(): BelongsTo
