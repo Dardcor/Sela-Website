@@ -3,12 +3,11 @@
 namespace App\Services;
 
 use App\Models\GroupMember;
-use App\Models\Group;
 use Illuminate\Database\Eloquent\Collection;
 
 class GroupMemberService
 {
-    public function getGroupMembers(int $groupId): Collection
+    public function getGroupMembers(string $groupId): Collection
     {
         return GroupMember::with('user')->where('group_id', $groupId)->get();
     }
@@ -19,7 +18,7 @@ class GroupMemberService
         return GroupMember::create($data);
     }
 
-    public function getById(int $id): GroupMember
+    public function getById(string $id): GroupMember
     {
         return GroupMember::findOrFail($id);
     }
@@ -30,7 +29,7 @@ class GroupMemberService
         return $member->fresh();
     }
 
-    public function removeMember(int $groupId, int $userId): bool
+    public function removeMember(string $groupId, string $userId): bool
     {
         $member = GroupMember::where('group_id', $groupId)
             ->where('user_id', $userId)

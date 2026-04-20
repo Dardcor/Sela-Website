@@ -2,48 +2,52 @@
 
 namespace App\Services;
 
-use App\Models\SubTask;
-use App\Models\SubTaskAssignment;
+use App\Models\Subtask;
+use App\Models\SubtaskProgress;
 
 class SubTaskService
 {
     public function createSubtask($task_id, $request)
     {
-
-        $subtask = SubTask::create([
-            'name' => $request->name,
+        $subtask = Subtask::create([
+            'title' => $request->title,
             'description' => $request->description,
             'task_id' => $task_id,
-            'status' => 'pending'
         ]);
 
-        SubTaskAssignment::create([
-            'sub_task_id' => $subtask->id,
-            'user_id' => $request->user_id,
-            'role' => 'assignee',
-            'status' => 'assigned'
-        ]);
+        if ($request->user_id) {
+            SubtaskProgress::create([
+                'subtask_id' => $subtask->id,
+                'user_id' => $request->user_id,
+                'progress' => 0,
+            ]);
+        }
 
-        return $subtask;
+        return $subtask->load('progressEntries');
     }
 
-
-    public function updateSubtaskStatus($subtask_id, $status)
+    public function updateProgress($subtask_id, $user_id, $progress)
     {
-        $subtask = SubTask::findOrFail($subtask_id);
+        $entry = SubtaskProgress::where('subtask_id', $subtask_id)
+            ->where('user_id', $user_id)
+            ->first();
 
-        $subtask->update([
-            'status' => $status
-        ]);
+        if ($entry) {
+            $entry->update(['progress' => $progress]);
+        } else {
+            $entry = SubtaskProgress::create([
+                'subtask_id' => $subtask_id,
+                'user_id' => $user_id,
+                'progress' => $progress,
+            ]);
+        }
 
-        return $subtask;
+        return $entry;
     }
-
 
     public function delete($subtask_id)
     {
-        $subtask = SubTask::findOrFail($subtask_id);
-
+        $subtask = Subtask::findOrFail($subtask_id);
         $subtask->delete();
 
         return true;

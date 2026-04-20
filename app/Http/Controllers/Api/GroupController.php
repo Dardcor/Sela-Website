@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 
 class GroupController extends Controller
 {
-
     public function getByUser(Request $request, $user_id, GroupService $service)
     {
         $search = $request->search;
@@ -17,7 +16,7 @@ class GroupController extends Controller
         $groups = $service->getGroupsByUser($user_id, $search);
 
         return response()->json([
-            "groups" => $groups
+            "groups" => $groups,
         ]);
     }
 
@@ -31,24 +30,25 @@ class GroupController extends Controller
     public function store(Request $request, GroupService $service)
     {
         $request->validate([
-            'course' => 'required|string|max:100',
-            'max_member' => 'required|integer',
-            'number_group' => 'required|integer'
+            'course_name' => 'required|string|max:100',
+            'member_limit' => 'nullable|integer|min:1',
+            'group_number' => 'required|integer|min:1',
+            'class_name' => 'nullable|string|max:100',
+            'lecture_code' => 'nullable|string|max:100',
         ]);
 
         $group = $service->createGroup($request);
 
         return response()->json([
             "message" => "Group created",
-            "data" => $group
+            "data" => $group,
         ], 201);
     }
 
     public function join(Request $request, GroupService $service)
     {
-
         $request->validate([
-            'code' => 'required|string'
+            'code' => 'required|string',
         ]);
 
         $data = $service->joinGroup(
@@ -58,7 +58,7 @@ class GroupController extends Controller
 
         return response()->json([
             "message" => "Join group success",
-            "data" => $data
+            "data" => $data,
         ]);
     }
 }

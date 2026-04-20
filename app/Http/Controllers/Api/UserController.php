@@ -14,30 +14,50 @@ class UserController extends Controller
         return response()->json($service->getAll());
     }
 
-    public function show(UserService $service, int $id): JsonResponse
+    public function show(UserService $service, string $id): JsonResponse
     {
         return response()->json($service->getById($id));
     }
 
-    public function update(Request $request, UserService $service, int $id): JsonResponse
+    public function update(Request $request, UserService $service, string $id): JsonResponse
     {
-        $user = $service->getById($id);
+        $profile = $service->getById($id);
 
         $validated = $request->validate([
             'username' => 'sometimes|required|string|max:50',
-            'email' => 'sometimes|required|email|max:100|unique:users,email,' . $id,
-            'password' => 'sometimes|required|string|min:6',
-            'class' => 'nullable|string|max:100',
-            'role' => 'nullable|string|max:50',
+            'full_name' => 'sometimes|required|string|max:100',
+            'avatar_url' => 'nullable|string',
+            'class_name' => 'nullable|string|max:100',
         ]);
 
-        return response()->json($service->update($user, $validated));
+        return response()->json($service->update($profile, $validated));
     }
 
-    public function destroy(UserService $service, int $id): JsonResponse
+    public function destroy(UserService $service, string $id): JsonResponse
     {
-        $user = $service->getById($id);
-        $service->delete($user);
+        $profile = $service->getById($id);
+        $service->delete($profile);
+
+        return response()->json(null, 204);
+    }
+
+    public function abilities(UserService $service, string $userId): JsonResponse
+    {
+        return response()->json($service->getAbilities($userId));
+    }
+
+    public function storeAbility(Request $request, UserService $service, string $userId): JsonResponse
+    {
+        $validated = $request->validate([
+            'ability' => 'required|string|max:100',
+        ]);
+
+        return response()->json($service->createAbility($userId, $validated['ability']), 201);
+    }
+
+    public function destroyAbility(UserService $service, string $id): JsonResponse
+    {
+        $service->deleteAbility($id);
 
         return response()->json(null, 204);
     }

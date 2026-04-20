@@ -1,18 +1,13 @@
 <?php
 
-use App\Http\Controllers\Api\AbilityController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EtholController;
 
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\GroupMemberController;
-use App\Http\Controllers\Api\SubTaskAssignmentController;
 use App\Http\Controllers\Api\SubTaskController;
-use App\Http\Controllers\Api\SupportFileController;
 use App\Http\Controllers\Api\TaskController;
-use App\Http\Controllers\Api\TaskGenerationController;
-use App\Http\Controllers\Api\UserAbilityController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -48,16 +43,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('users/{id}', [UserController::class, 'update']);
     Route::delete('users/{id}', [UserController::class, 'destroy']);
 
-    // Abilities CRUD
-    Route::apiResource('abilities', AbilityController::class);
+    // Profile Abilities (maps to profile_abilities table in db.sql)
+    Route::get('users/{userId}/abilities', [UserController::class, 'abilities']);
+    Route::post('users/{userId}/abilities', [UserController::class, 'storeAbility']);
+    Route::delete('profile-abilities/{id}', [UserController::class, 'destroyAbility']);
 
-    // User Abilities (nested under users)
-    Route::get('users/{userId}/abilities', [UserAbilityController::class, 'index']);
-    Route::post('users/{userId}/abilities', [UserAbilityController::class, 'store']);
-    Route::put('user-abilities/{id}', [UserAbilityController::class, 'update']);
-    Route::delete('user-abilities/{id}', [UserAbilityController::class, 'destroy']);
-
-    // Groups 
+    // Groups
     Route::get('/groups/user/{user_id}', [GroupController::class, 'getByUser']);
     Route::get('/groups/{group_id}', [GroupController::class, 'detail']);
     Route::post('/groups', [GroupController::class, 'store']);
@@ -69,35 +60,27 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('group-members/{id}', [GroupMemberController::class, 'update']);
     Route::delete('groups/{groupId}/members/{userId}', [GroupMemberController::class, 'destroy']);
 
-    // Tasks 
+    // Tasks
     Route::prefix('tasks')->group(function () {
         Route::get('/user/{user_id}', [TaskController::class, 'getByUser']);
         Route::get('/{task_id}/detail/{user_id}', [TaskController::class, 'detail']);
         Route::post('/', [TaskController::class, 'store']);
     });
 
-    //Sub Task
+    // Subtasks (maps to subtasks + subtask_progress tables in db.sql)
     Route::post('/tasks/{task_id}/subtasks', [SubTaskController::class, 'store']);
-    Route::patch('subtasks/{subtask_id}/status', [SubTaskController::class, 'updateStatus']);
+    Route::patch('subtasks/{subtask_id}/progress', [SubTaskController::class, 'updateProgress']);
     Route::delete('subtasks/{id}', [SubTaskController::class, 'destroy']);
 
-    // Sub Task Assignments (nested under sub-tasks)
-    Route::get('sub-tasks/{subTaskId}/assignments', [SubTaskAssignmentController::class, 'index']);
-    Route::post('sub-tasks/{subTaskId}/assignments', [SubTaskAssignmentController::class, 'store']);
-    Route::put('sub-task-assignments/{id}', [SubTaskAssignmentController::class, 'update']);
-    Route::delete('sub-task-assignments/{id}', [SubTaskAssignmentController::class, 'destroy']);
+    // Task Links (maps to task_links table in db.sql)
+    Route::get('tasks/{taskId}/links', [TaskController::class, 'links']);
+    Route::post('tasks/{taskId}/links', [TaskController::class, 'storeLink']);
+    Route::delete('task-links/{id}', [TaskController::class, 'destroyLink']);
 
-    // Support Files (nested under tasks)
-    Route::get('tasks/{taskId}/files', [SupportFileController::class, 'index']);
-    Route::post('tasks/{taskId}/files', [SupportFileController::class, 'store']);
-    Route::get('support-files/{id}', [SupportFileController::class, 'show']);
-    Route::delete('support-files/{id}', [SupportFileController::class, 'destroy']);
-
-    // Task Generations (nested under tasks)
-    Route::get('tasks/{taskId}/generations', [TaskGenerationController::class, 'index']);
-    Route::post('tasks/{taskId}/generations', [TaskGenerationController::class, 'store']);
-    Route::get('task-generations/{id}', [TaskGenerationController::class, 'show']);
-    Route::delete('task-generations/{id}', [TaskGenerationController::class, 'destroy']);
+    // Task Files (maps to task_files table in db.sql)
+    Route::get('tasks/{taskId}/files', [TaskController::class, 'files']);
+    Route::post('tasks/{taskId}/files', [TaskController::class, 'storeFile']);
+    Route::delete('task-files/{id}', [TaskController::class, 'destroyFile']);
 
     // ETHOL Integration (authenticated — requires prior login)
     Route::prefix('ethol')->group(function () {

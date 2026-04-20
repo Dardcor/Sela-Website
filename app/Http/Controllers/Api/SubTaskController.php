@@ -8,47 +8,43 @@ use Illuminate\Http\Request;
 
 class SubTaskController extends Controller
 {
-    protected $taskService;
-
-   public function store(Request $request,$task_id,SubTaskService $service)
+    public function store(Request $request, $task_id, SubTaskService $service)
     {
         $request->validate([
-            'name'=>'required|string|max:150',
-            'description'=>'nullable|string',
-            'user_id'=>'required|exists:users,id'
+            'title' => 'required|string|max:150',
+            'description' => 'nullable|string',
+            'user_id' => 'nullable|uuid|exists:profiles,id',
         ]);
 
-        $data = $service->createSubtask($task_id,$request);
+        $data = $service->createSubtask($task_id, $request);
 
         return response()->json([
-            "message"=>"Subtask created",
-            "data"=>$data
-        ],201);
+            "message" => "Subtask created",
+            "data" => $data,
+        ], 201);
     }
 
-
-    public function updateStatus(Request $request,$subtask_id,SubTaskService $service)
+    public function updateProgress(Request $request, $subtask_id, SubTaskService $service)
     {
         $request->validate([
-            'status'=>'required|in:pending,in_progress,done,upcoming'
+            'progress' => 'required|integer|min:0|max:100',
+            'user_id' => 'required|uuid|exists:profiles,id',
         ]);
 
-        $data = $service->updateSubtaskStatus($subtask_id,$request->status);
+        $data = $service->updateProgress($subtask_id, $request->user_id, $request->progress);
 
         return response()->json([
-            "message"=>"Status updated",
-            "data"=>$data
+            "message" => "Progress updated",
+            "data" => $data,
         ]);
     }
 
-
-    public function destroy($subtask_id,SubTaskService $service)
+    public function destroy($subtask_id, SubTaskService $service)
     {
         $service->delete($subtask_id);
 
         return response()->json([
-            "message"=>"Subtask deleted"
+            "message" => "Subtask deleted",
         ]);
     }
-
 }
