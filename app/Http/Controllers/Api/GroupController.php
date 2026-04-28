@@ -61,4 +61,12 @@ class GroupController extends Controller
             "data" => $data,
         ]);
     }
+
+    public function destroy($id)
+    {
+        $group = \App\Models\Group::findOrFail($id);
+        $group->delete();
+
+        return response()->json(null, 204);
+    }
 }

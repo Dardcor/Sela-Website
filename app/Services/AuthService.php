@@ -3,20 +3,32 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Models\Profile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 
 class AuthService
 {
     public function register(array $data): User
     {
-        $data['password'] = $data['password'];
-        return User::create($data);
+        return DB::transaction(function () use ($data) {
+            $user = User::create($data);
+
+            Profile::create([
+                'id' => $user->id,
+                'username' => $data['username'],
+                'full_name' => $data['username'],
+                'class_name' => $data['class_name'] ?? $data['class'] ?? null,
+            ]);
+
+            return $user;
+        });
     }
 
     public function login(array $credentials): array
     {
-        $user = User::where('email', $credentials['email'])->first();
+        $user = User::with('profile')->where('email', $credentials['email'])->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([

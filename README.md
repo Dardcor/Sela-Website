@@ -4,7 +4,7 @@ Laravel 12 backend for the Sela project management platform. The current repo is
 
 > Status note: this repository still contains some legacy controller/service naming (`UserAbility`, `SubTask`, `SupportFile`, etc.), but the active PostgreSQL schema is imported from `db.sql` through `database/migrations/2026_04_07_150000_apply_supabase_schema_from_db_sql.php`.
 
-**Production:** `https://dardcor.acalypha.my.id/api`
+**Production:** `https://sela.my.id/api`
 
 ## Tech Stack
 
@@ -25,15 +25,23 @@ Laravel 12 backend for the Sela project management platform. The current repo is
 - `database/migrations/2026_04_07_150000_apply_supabase_schema_from_db_sql.php` — applies `db.sql`
 - `deploy/` — deployment scripts and Nginx config
 
-## Local Setup
+## Local Setup (Cara Menjalankan Server)
+
+1. Clone repository dan masuk ke folder backend.
+2. Salin file environment:
+   ```bash
+   cp .env.example .env
+   ```
+3. Set konfigurasi database Anda di dalam file `.env` (contoh untuk Supabase/PostgreSQL ada di bawah).
+4. Jalankan perintah berikut secara berurutan untuk menginisialisasi dan menjalankan server:
 
 ```bash
 composer install
-cp .env.example .env
 php artisan key:generate
+php artisan storage:link
+php artisan migrate
+php artisan serve --host=<YOUR-IP> --port=8000
 ```
-
-Set your database config in `.env`.
 
 ### Supabase / PostgreSQL example
 
@@ -55,13 +63,6 @@ Or pooled connection URL:
 DB_CONNECTION=pgsql
 DB_URL=postgresql://postgres.YOUR_PROJECT_REF:YOUR_PASSWORD@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
 DB_SSLMODE=require
-```
-
-Then run:
-
-```bash
-php artisan migrate
-php artisan serve
 ```
 
 ### Frontend assets
