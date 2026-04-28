@@ -11,7 +11,7 @@ FROM php:8.4-fpm AS backend
 
 # Install system dependencies (Adjusted for PostgreSQL since you use Supabase)
 RUN apt-get update && apt-get install -y \
-    git curl unzip libpq-dev libonig-dev libzip-dev zip \
+    git curl unzip libpq-dev libonig-dev libzip-dev zip nginx \
     && docker-php-ext-install pdo pdo_pgsql pgsql mbstring zip
 
 # Install Composer
@@ -38,5 +38,32 @@ RUN php artisan config:clear && \
     php artisan route:clear && \
     php artisan view:clear
 
-# Default CMD from template
-CMD ["php-fpm"]
+# Configure Nginx
+RUN mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
+COPY <<EOF /etc/nginx/sites-available/default
+server {
+    listen 8000;
+    server_name _;
+    root /var/www/html/public;
+    index index.php;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass localhost:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+EOF
+
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+
+# Expose port 8000
+EXPOSE 8000
+
+# Start PHP-FPM and Nginx
+CMD ["sh", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
