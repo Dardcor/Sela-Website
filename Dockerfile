@@ -1,41 +1,42 @@
-FROM php:8.2-fpm
+# Stage 1 - Build Frontend (Vite)
+FROM node:20 AS frontend
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 
-# Set working directory
+# Stage 2 - Backend (Laravel + PHP + Composer)
+FROM php:8.2-fpm AS backend
+
+# Install system dependencies (Adjusted for PostgreSQL since you use Supabase)
+RUN apt-get update && apt-get install -y \
+    git curl unzip libpq-dev libonig-dev libzip-dev zip \
+    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring zip
+
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
 WORKDIR /var/www/html
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
-    libpq-dev \
-    zip \
-    unzip
+# Copy app files
+COPY . .
 
-# Clear cache
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+# Copy built frontend from Stage 1 (Adjusted to public/build as per default Vite/Laravel configuration)
+COPY --from=frontend /app/public/build ./public/build
 
-# Install PHP extensions required by Laravel & Supabase (PostgreSQL)
-RUN docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath gd zip
+# Install PHP dependencies
+RUN composer install --no-dev --optimize-autoloader
 
-# Install Node.js & npm (for Vite)
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
-
-# Get latest Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Copy existing application directory contents
-COPY . /var/www/html
-
-# Set Permissions for Laravel
+# Set proper permissions for Laravel
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage \
-    && chmod -R 775 /var/www/html/bootstrap/cache
+    && chmod -R 777 /var/www/html/bootstrap/cache
 
-# Expose port 9000 and start php-fpm server
-EXPOSE 9000
+# Laravel setup
+RUN php artisan config:clear && \
+    php artisan route:clear && \
+    php artisan view:clear
+
+# Default CMD from template
 CMD ["php-fpm"]
