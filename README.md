@@ -506,4 +506,3 @@ sudo bash deploy/setup-ssl.sh
 ```bash
 tail -f /var/www/sela-website/storage/logs/laravel.log
 ```
-"# Sela-Website-Test" 

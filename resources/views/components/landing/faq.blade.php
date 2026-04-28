@@ -1,11 +1,11 @@
 @props(['items' => [
     [
         'question' => 'Bagaimana SELA memastikan pembagian tugas dalam kelompok benar-benar adil?',
-        'answer' => 'SELA menggunakan algoritma berbasis profil skill, riwayat kontribusi, dan ketersediaan waktu setiap anggota untuk mendistribusikan tugas secara proporsional. Setiap pembagian bersifat transparan dan dapat dilihat oleh seluruh anggota kelompok.',
+        'answer' => 'SELA menggunakan algoritma berbasis profil skill, riwayat kontribusi, dan ketersediaan waktu setiap anggota untuk mendistribusikan tugas secara proporsional. Setiap pembagian bersifat transparan dan dapat dilihat oleh seluruh anggota kelompok. Dashboard real-time memudahkan identifikasi ketidakseimbangan beban kerja.',
     ],
     [
         'question' => 'Apakah fitur AI dapat memecah semua jenis tugas akademik?',
-        'answer' => 'AI SELA dirancang untuk menangani berbagai jenis tugas akademik — mulai dari laporan tertulis, presentasi, proyek pemrograman, hingga penelitian kelompok. Semakin detail deskripsi tugas yang diberikan, semakin presisi hasil pemecahan yang dihasilkan AI.',
+        'answer' => 'AI SELA dirancang untuk menangani berbagai jenis tugas akademik — mulai dari laporan tertulis, presentasi, proyek pemrograman, hingga penelitian kelompok. Untuk tugas kreatif atau yang memerlukan judgment khusus, gunakan AI sebagai starting point dan review bersama kelompok sebelum eksekusi.',
     ],
     [
         'question' => 'Bagaimana dosen pembimbing dapat mendeteksi mahasiswa yang tidak berkontribusi (free-rider)?',
@@ -13,13 +13,23 @@
     ],
     [
         'question' => 'Apakah data akademik dan kredensial login mahasiswa dijamin keamanannya?',
-        'answer' => 'Keamanan data adalah prioritas utama kami. Semua data dienkripsi menggunakan standar AES-256, dan autentikasi dilakukan melalui protokol SSO institusi yang aman. Kami tidak pernah menyimpan kata sandi pengguna secara langsung.',
+        'answer' => 'Keamanan data adalah prioritas utama kami. Semua data dienkripsi menggunakan standar AES-256, dan autentikasi dilakukan melalui protokol SSO institusi yang aman. Kami tidak pernah menyimpan kata sandi pengguna secara langsung, dan semua akses diaudit untuk compliance.',
     ],
     [
         'question' => 'Apakah aplikasi SELA hanya tersedia di ponsel pintar?',
         'answer' => 'SELA tersedia di platform mobile (Android & iOS) maupun web browser. Kamu bisa mengakses seluruh fitur SELA dari smartphone, tablet, laptop, maupun desktop sesuai preferensimu.',
-    ],
+    ]
 ]])
+
+
+<style>
+    .faq-item.open .faq-a {
+        max-height: 500px;
+    }
+    .faq-item.open .faq-icon {
+        transform: rotate(45deg);
+    }
+</style>
 
 <section id="faq" class="py-[130px] bg-[#f7f9fc]">
     <div class="max-w-[1280px] mx-auto px-10 max-md:px-5">
