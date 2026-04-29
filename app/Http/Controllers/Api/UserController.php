@@ -14,6 +14,21 @@ class UserController extends Controller
         return response()->json($service->getAll());
     }
 
+    public function search(Request $request)
+    {
+        $query = $request->input('q');
+
+        if (!$query) {
+            return response()->json([]);
+        }
+
+        $users = \App\Models\User::where('username', 'ILIKE', "%{$query}%")
+            ->orWhere('email', 'ILIKE', "%{$query}%")
+            ->get();
+
+        return response()->json($users);
+    }
+
     public function show(UserService $service, string $id): JsonResponse
     {
         return response()->json($service->getById($id));
@@ -39,6 +54,34 @@ class UserController extends Controller
         $service->delete($profile);
 
         return response()->json(null, 204);
+    }
+
+    public function getProfileAbilities(Request $request): JsonResponse
+    {
+        $userId = $request->user()->id;
+        $abilities = \App\Models\ProfileAbility::where('user_id', $userId)->get();
+
+        return response()->json(['abilities' => $abilities]);
+    }
+
+    public function updateProfileAbilities(Request $request): JsonResponse
+    {
+        $userId = $request->user()->id;
+        $validated = $request->validate([
+            'abilities' => 'required|array',
+            'abilities.*' => 'string|max:100',
+        ]);
+
+        \App\Models\ProfileAbility::where('user_id', $userId)->delete();
+
+        foreach ($validated['abilities'] as $ability) {
+            \App\Models\ProfileAbility::create([
+                'user_id' => $userId,
+                'ability' => $ability,
+            ]);
+        }
+
+        return response()->json(['message' => 'Abilities updated successfully']);
     }
 
     public function abilities(UserService $service, string $userId): JsonResponse

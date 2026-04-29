@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sela_app_render_ready
+    restart: unless-stopped
+    environment:
+      # Mocking Render's dynamic port locally
+      - PORT=8000
+    ports:
+      # local:container
+      - "8000:8000" 
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - sela_network
+
+networks:
+  sela_network:
+    driver: bridge

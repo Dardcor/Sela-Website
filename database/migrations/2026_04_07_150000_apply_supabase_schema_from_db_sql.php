@@ -19,8 +19,6 @@ return new class extends Migration
 
         DB::unprepared('CREATE EXTENSION IF NOT EXISTS pgcrypto;');
 
-        // Drop only legacy tables that are NOT part of the current schema (db.sql)
-        // and are no longer used by the application.
         DB::unprepared(<<<'SQL'
             DROP TABLE IF EXISTS public.support_files CASCADE;
             DROP TABLE IF EXISTS public.user_sessions CASCADE;
@@ -32,18 +30,10 @@ return new class extends Migration
             DROP TABLE IF EXISTS public.abilities CASCADE;
         SQL);
 
-        // Apply the idempotent Supabase schema.
-        // db.sql uses CREATE TABLE IF NOT EXISTS, CREATE OR REPLACE FUNCTION,
-        // DROP POLICY IF EXISTS + CREATE POLICY, etc., so it is safe to run
-        // multiple times without destroying existing data.
-        DB::unprepared(file_get_contents($schemaPath));
-
-        // Ensure Laravel infrastructure tables exist.
-        // These are required by the application (Sanctum, ETHOL sessions)
-        // but are NOT managed by Supabase / db.sql.
+        // CREATE LARAVEL INFRASTRUCTURE FIRST SO DB.SQL CAN REFERENCE IT IF NEEDED
         DB::unprepared(<<<'SQL'
-            CREATE TABLE IF NOT EXISTS public.users (
-                id bigserial PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS public.auth_users (
+                id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
                 username varchar(255) NOT NULL,
                 email varchar(255) NOT NULL UNIQUE,
                 password varchar(255) NOT NULL,
@@ -53,29 +43,15 @@ return new class extends Migration
                 created_at timestamp(0) without time zone,
                 updated_at timestamp(0) without time zone
             );
-
-            CREATE TABLE IF NOT EXISTS public.personal_access_tokens (
-                id bigserial PRIMARY KEY,
-                tokenable_type varchar(255) NOT NULL,
-                tokenable_id bigint NOT NULL,
-                name varchar(255) NOT NULL,
-                token varchar(64) NOT NULL UNIQUE,
-                abilities text,
-                last_used_at timestamp(0) without time zone,
-                expires_at timestamp(0) without time zone,
-                created_at timestamp(0) without time zone,
-                updated_at timestamp(0) without time zone
-            );
-
-            CREATE TABLE IF NOT EXISTS public.user_ethol_sessions (
-                id bigserial PRIMARY KEY,
-                user_id bigint NOT NULL,
-                ethol_token text NOT NULL,
-                ethol_cookies text,
-                created_at timestamp(0) without time zone,
-                updated_at timestamp(0) without time zone
-            );
+            
+            -- Keep users table mapped for Laravel conventions
+            CREATE OR REPLACE VIEW public.users AS SELECT * FROM public.auth_users;
         SQL);
+
+        $schemaContent = file_get_contents($schemaPath);
+        $schemaContent = str_replace('auth.users', 'public.auth_users', $schemaContent);
+        $schemaContent = str_replace('public.users', 'public.auth_users', $schemaContent);
+        DB::unprepared($schemaContent);
     }
 
     public function down(): void
@@ -84,9 +60,6 @@ return new class extends Migration
             return;
         }
 
-        // Only drop Laravel infrastructure tables.
-        // Supabase-managed tables (from db.sql) are intentionally NOT dropped
-        // to prevent accidental data loss.
         DB::unprepared(<<<'SQL'
             DROP TABLE IF EXISTS public.user_ethol_sessions CASCADE;
             DROP TABLE IF EXISTS public.personal_access_tokens CASCADE;

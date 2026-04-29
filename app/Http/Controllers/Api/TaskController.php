@@ -51,6 +51,36 @@ class TaskController extends Controller
         ], 201);
     }
 
+    public function update(Request $request, $id, TaskService $service)
+    {
+        $request->validate([
+            'title' => 'nullable|string|max:150',
+            'description' => 'nullable|string',
+            'category' => 'nullable|string',
+            'subject' => 'nullable|string',
+            'start_date' => 'nullable|date',
+            'due_date' => 'nullable|date',
+            'is_group' => 'nullable|boolean',
+            'group_id' => 'nullable|uuid|exists:groups,id',
+            'status' => 'nullable|string',
+            'priority' => 'nullable|string',
+        ]);
+
+        $task = $service->updateTask($id, $request->all());
+
+        return response()->json([
+            "message" => "Task updated successfully",
+            "data" => $task,
+        ]);
+    }
+
+    public function destroy($id, TaskService $service)
+    {
+        $service->deleteTask($id);
+
+        return response()->json(null, 204);
+    }
+
     public function links($taskId)
     {
         return response()->json(TaskLink::where('task_id', $taskId)->get());
@@ -70,6 +100,12 @@ class TaskController extends Controller
         ]);
 
         return response()->json($link, 201);
+    }
+
+    public function destroyAllLinks($taskId)
+    {
+        TaskLink::where('task_id', $taskId)->delete();
+        return response()->json(null, 204);
     }
 
     public function destroyLink($id)
@@ -104,6 +140,12 @@ class TaskController extends Controller
         ]);
 
         return response()->json($file, 201);
+    }
+
+    public function destroyAllFiles($taskId)
+    {
+        TaskFile::where('task_id', $taskId)->delete();
+        return response()->json(null, 204);
     }
 
     public function destroyFile($id)

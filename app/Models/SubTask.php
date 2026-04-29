@@ -39,4 +39,11 @@ class Subtask extends Model
     {
         return $this->hasMany(SubtaskProgress::class, 'subtask_id');
     }
+
+    protected static function booted()
+    {
+        static::deleting(function ($subtask) {
+            $subtask->progressEntries()->delete();
+        });
+    }
 }

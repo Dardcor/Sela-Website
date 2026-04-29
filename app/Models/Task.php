@@ -67,4 +67,15 @@ class Task extends Model
     {
         return $this->hasMany(TaskFile::class);
     }
+
+    protected static function booted()
+    {
+        static::deleting(function ($task) {
+            $task->subtasks()->each(function($subtask) {
+                $subtask->delete();
+            });
+            $task->taskLinks()->delete();
+            $task->taskFiles()->delete();
+        });
+    }
 }

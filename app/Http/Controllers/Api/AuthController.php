@@ -15,7 +15,7 @@ class AuthController extends Controller
             'username' => 'required|string|max:50',
             'email' => 'required|email|max:100|unique:users,email',
             'password' => 'required|string|min:6',
-            'class' => 'nullable|string|max:100',
+            'class_name' => 'nullable|string|max:100',
             'role' => 'nullable|string|max:50',
         ]);
 
@@ -23,7 +23,13 @@ class AuthController extends Controller
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
+            'user' => [
+                'id' => $user->id,
+                'email' => $user->email,
+                'username' => $user->username,
+                'full_name' => $user->username,
+                'class_name' => $request->class_name,
+            ],
             'token' => $token,
         ], 201);
     }
@@ -47,8 +53,94 @@ class AuthController extends Controller
         return response()->json(['message' => 'Logged out successfully.']);
     }
 
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $profile = \App\Models\Profile::where('id', $user->id)->first();
+        if ($profile) {
+            if ($request->has('full_name')) {
+                $profile->full_name = $request->full_name;
+            }
+            if ($request->has('class_name')) {
+                $profile->class_name = $request->class_name;
+            }
+            if ($request->has('avatar_url')) {
+                $profile->avatar_url = $request->avatar_url;
+            }
+            $profile->save();
+        }
+
+        return response()->json(['message' => 'Profile updated']);
+    }
+
     public function me(Request $request): JsonResponse
     {
-        return response()->json($request->user());
+        $user = $request->user()->load('profile');
+        return response()->json([
+            'user' => [
+                'id' => $user->id,
+                'email' => $user->email,
+                'username' => $user->username,
+                'full_name' => $user->profile?->full_name ?? $user->username,
+                'class_name' => $user->profile?->class_name,
+                'avatar_url' => $user->profile?->avatar_url,
+            ]
+        ]);
+    }
+
+    public function verifyPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        $user = $request->user();
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Password salah'], 400);
+        }
+
+        return response()->json(['message' => 'Password correct']);
+    }
+
+    public function changePassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'old_password' => 'required|string',
+            'new_password' => 'required|string|min:6',
+        ]);
+
+        $user = $request->user();
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->old_password, $user->password)) {
+            return response()->json(['message' => 'Password salah'], 400);
+        }
+
+        if (\Illuminate\Support\Facades\Hash::check($request->new_password, $user->password)) {
+            return response()->json(['message' => 'Password harus berbeda dari password lama'], 400);
+        }
+
+        $user->password = \Illuminate\Support\Facades\Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json(['message' => 'Password updated']);
+    }
+
+    public function forgot_password(Request $request): JsonResponse
+    {
+        // Dummy implementation
+        return response()->json(['message' => 'OTP sent successfully']);
+    }
+
+    public function verify_otp(Request $request): JsonResponse
+    {
+        // Dummy implementation
+        return response()->json(['message' => 'OTP verified successfully']);
+    }
+
+    public function reset_password(Request $request): JsonResponse
+    {
+        // Dummy implementation
+        return response()->json(['message' => 'Password reset successfully']);
     }
 }

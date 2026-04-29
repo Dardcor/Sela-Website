@@ -21,7 +21,13 @@ class GroupService
             ->select(
                 'groups.id',
                 'groups.name',
-                'groups.course_name'
+                'groups.course_name',
+                'groups.class_name',
+                'groups.group_number',
+                'groups.member_limit',
+                'groups.invitation_code',
+                'groups.lecture_code',
+                'group_members.role'
             )
             ->get();
 
@@ -35,7 +41,8 @@ class GroupService
                 ->where('group_members.group_id', $group->id)
                 ->select(
                     'profiles.id',
-                    'profiles.username'
+                    'profiles.username',
+                    'profiles.avatar_url'
                 )
                 ->limit(5)
                 ->get();
@@ -83,7 +90,9 @@ class GroupService
 
         $code = strtoupper(Str::random(6));
 
-        $groupName = ($profile->class_name ?? '')
+        $userClass = $profile->class_name ?? 'Kelas Default';
+
+        $groupName = $userClass
             . "-"
             . $request->course_name
             . "-Kelompok "
@@ -92,7 +101,7 @@ class GroupService
         $group = Group::create([
             'name' => $groupName,
             'course_name' => $request->course_name,
-            'class_name' => $request->class_name ?? $profile->class_name,
+            'class_name' => $request->class_name ?? $userClass,
             'group_number' => $request->group_number,
             'member_limit' => $request->member_limit ?? 4,
             'invitation_code' => $code,

@@ -17,7 +17,7 @@
                 <a href="#team" class="transition-colors duration-200 ease-[cubic-bezier(0.19,1,0.22,1)] hover:text-cyan">Bantuan</a>
             </div>
             <div class="nav-actions flex gap-3 items-center">
-                <a href="#" class="btn inline-flex items-center justify-center gap-2 
+                <a href="https://play.google.com/store/apps/details?id=com.pdbl.sela" class="btn inline-flex items-center justify-center gap-2 
                                    py-[14px] px-[28px] font-mono text-[0.85rem] cursor-pointer 
                                    rounded-[14px] border-[3px] border-black whitespace-nowrap 
                                    transition-all duration-200 ease-[cubic-bezier(0.19,1,0.22,1)] 

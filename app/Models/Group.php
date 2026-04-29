@@ -51,4 +51,14 @@ class Group extends Model
     {
         return $this->hasMany(Task::class);
     }
+
+    protected static function booted()
+    {
+        static::deleting(function ($group) {
+            $group->tasks()->each(function ($task) {
+                $task->delete();
+            });
+            $group->members()->delete();
+        });
+    }
 }

@@ -18,11 +18,16 @@ class TaskService
             ->select(
                 'tasks.id',
                 'tasks.title',
+                'tasks.description',
+                'tasks.start_date',
                 'tasks.due_date',
                 'tasks.status',
                 'tasks.priority',
                 'tasks.is_group',
+                'tasks.created_by',
                 'groups.name as group_name',
+                'groups.class_name',
+                'groups.course_name',
                 'groups.id as group_id'
             )
             ->get();
@@ -34,10 +39,21 @@ class TaskService
 
             $progressEntries = DB::table('subtask_progress')
                 ->join('subtasks', 'subtasks.id', '=', 'subtask_progress.subtask_id')
+                ->join('group_members', function ($join) use ($task) {
+                    $join->on('group_members.user_id', '=', 'subtask_progress.user_id')
+                         ->where('group_members.group_id', '=', $task->group_id);
+                })
                 ->where('subtasks.task_id', $task->id)
                 ->avg('subtask_progress.progress');
 
             $task->progress = $total > 0 ? round($progressEntries ?? 0) : 0;
+
+            $task->members = DB::table('group_members')
+                ->join('profiles', 'profiles.id', '=', 'group_members.user_id')
+                ->where('group_members.group_id', $task->group_id)
+                ->select('profiles.id', 'profiles.full_name', 'profiles.avatar_url', 'profiles.username')
+                ->limit(5)
+                ->get();
         }
 
         $personalTasks = DB::table('tasks')
@@ -51,7 +67,8 @@ class TaskService
                 'tasks.due_date',
                 'tasks.status',
                 'tasks.priority',
-                'tasks.is_group'
+                'tasks.is_group',
+                'tasks.created_by'
             )
             ->get();
 
@@ -81,7 +98,9 @@ class TaskService
                 'tasks.status',
                 'tasks.priority',
                 'tasks.group_id',
-                'groups.name as group_name'
+                'groups.name as group_name',
+                'groups.class_name',
+                'groups.course_name'
             )
             ->first();
 
@@ -124,7 +143,9 @@ class TaskService
                 ->select(
                     'profiles.id',
                     'profiles.username',
-                    'profiles.full_name'
+                    'profiles.full_name',
+                    'profiles.avatar_url',
+                    'group_members.role'
                 )
                 ->get();
 
@@ -148,7 +169,16 @@ class TaskService
         $avgProgress = $total > 0
             ? round(DB::table('subtask_progress')
                 ->join('subtasks', 'subtasks.id', '=', 'subtask_progress.subtask_id')
+                ->leftJoin('group_members', function ($join) use ($task) {
+                    $join->on('group_members.user_id', '=', 'subtask_progress.user_id')
+                         ->where('group_members.group_id', '=', $task->group_id);
+                })
                 ->where('subtasks.task_id', $task_id)
+                ->where(function ($q) use ($task) {
+                    if ($task->is_group) {
+                        $q->whereNotNull('group_members.id');
+                    }
+                })
                 ->avg('subtask_progress.progress') ?? 0)
             : 0;
 
@@ -165,6 +195,8 @@ class TaskService
                 "status" => $task->status,
                 "priority" => $task->priority,
                 "group_name" => $task->group_name,
+                "class_name" => $task->class_name,
+                "course_name" => $task->course_name,
                 "progress" => $avgProgress,
             ],
             "subtasks" => $subtasks,
@@ -200,5 +232,18 @@ class TaskService
         }
 
         return $task;
+    }
+
+    public function updateTask($id, array $data)
+    {
+        $task = Task::findOrFail($id);
+        $task->update($data);
+        return $task;
+    }
+
+    public function deleteTask($id)
+    {
+        $task = Task::findOrFail($id);
+        $task->delete();
     }
 }

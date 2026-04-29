@@ -4,16 +4,17 @@ Laravel 12 backend for the Sela project management platform. The current repo is
 
 > Status note: this repository still contains some legacy controller/service naming (`UserAbility`, `SubTask`, `SupportFile`, etc.), but the active PostgreSQL schema is imported from `db.sql` through `database/migrations/2026_04_07_150000_apply_supabase_schema_from_db_sql.php`.
 
-**Production:** `https://dardcor.acalypha.my.id/api`
+**Production:** `https://sela.my.id/api`
 
 ## Tech Stack
 
 - **Framework:** Laravel 12
-- **PHP:** `^8.2`
+- **PHP:** `8.4` (in Docker), `^8.2` (local development)
 - **Auth:** Laravel Sanctum bearer tokens
 - **Database:** PostgreSQL via Supabase
-- **Frontend assets:** Vite
-- **Deployment:** AWS EC2 + Nginx + PHP-FPM + Let's Encrypt
+- **Frontend assets:** Vite (compiled during Docker build)
+- **Web Server:** Nginx (reverse proxy on port 8000)
+- **Deployment:** Docker on Render (recommended) or AWS EC2
 - **ETHOL Integration:** PENS academic portal login flow
 
 ## Project Structure
@@ -25,43 +26,32 @@ Laravel 12 backend for the Sela project management platform. The current repo is
 - `database/migrations/2026_04_07_150000_apply_supabase_schema_from_db_sql.php` — applies `db.sql`
 - `deploy/` — deployment scripts and Nginx config
 
-## Local Setup
+## Local Setup (Cara Menjalankan Server)
+
+1. Clone repository dan masuk ke folder backend.
+2. Salin file environment:
+   ```bash
+   cp .env.example .env
+   ```
+3. Set konfigurasi database Anda di dalam file `.env` (contoh untuk Supabase/PostgreSQL ada di bawah).
+4. Jalankan perintah berikut secara berurutan untuk menginisialisasi dan menjalankan server:
 
 ```bash
 composer install
-cp .env.example .env
 php artisan key:generate
+php artisan storage:link
+php artisan migrate
+php artisan serve --host=<YOUR-IP> --port=8000
 ```
-
-Set your database config in `.env`.
 
 ### Supabase / PostgreSQL example
 
-Use either discrete variables:
-
-```env
-DB_CONNECTION=pgsql
-DB_HOST=aws-1-ap-southeast-1.pooler.supabase.com
-DB_PORT=5432
-DB_DATABASE=postgres
-DB_USERNAME=postgres.YOUR_PROJECT_REF
-DB_PASSWORD=your-password
-DB_SSLMODE=require
-```
-
-Or pooled connection URL:
+Pooled connection URL:
 
 ```env
 DB_CONNECTION=pgsql
 DB_URL=postgresql://postgres.YOUR_PROJECT_REF:YOUR_PASSWORD@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres
 DB_SSLMODE=require
-```
-
-Then run:
-
-```bash
-php artisan migrate
-php artisan serve
 ```
 
 ### Frontend assets
@@ -73,7 +63,183 @@ npm install
 npm run build
 ```
 
-> `public/build/` may already be present in the repo, so asset build is not always required just to boot the backend.
+ > `public/build/` may already be present in the repo, so asset build is not always required just to boot the backend.
+
+## Docker Setup
+
+This repo includes a multi-stage Dockerfile that builds both frontend (Node.js/Vite) and backend (PHP 8.4 + Nginx) in a single container. This is the recommended way to run the application in production and on Render.
+
+### Docker Architecture
+
+The Dockerfile uses **two-stage build**:
+
+1. **Stage 1 (Frontend)**: Node.js 20 compiles Vite assets → outputs to `public/build/`
+2. **Stage 2 (Backend)**: PHP 8.4-FPM + Nginx
+   - Copies compiled frontend assets
+   - Installs PHP dependencies with Composer
+   - Runs Nginx on port 8000 as reverse proxy
+   - Nginx forwards PHP requests to PHP-FPM internally
+
+**Why Nginx?** PHP-FPM alone cannot listen on HTTP ports. Nginx accepts requests on port 8000 and forwards them to PHP-FPM on localhost:9000.
+
+### Local Docker Deployment
+
+#### Prerequisites
+
+- Docker Desktop installed ([get it here](https://www.docker.com/products/docker-desktop))
+- Docker Compose (comes with Docker Desktop)
+
+#### Build the image
+
+```bash
+docker build -t sela-backend:latest .
+```
+
+#### Run container locally
+
+```bash
+docker run -d \
+  --name sela-backend \
+  -p 8000:8000 \
+  -e DB_CONNECTION=pgsql \
+  -e DB_HOST=your-supabase-host \
+  -e DB_PORT=5432 \
+  -e DB_DATABASE=postgres \
+  -e DB_USERNAME=postgres.YOUR_PROJECT_REF \
+  -e DB_PASSWORD=your-password \
+  -e DB_SSLMODE=require \
+  -e APP_KEY=your-app-key \
+  sela-backend:latest
+```
+
+Access the API at `http://localhost:8000/api`
+
+#### Using Docker Compose (easier)
+
+Create `docker-compose.yml` (if not present):
+
+```yaml
+version: '3.8'
+
+services:
+  sela-backend:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: ${DB_HOST}
+      DB_PORT: 5432
+      DB_DATABASE: postgres
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_SSLMODE: require
+      APP_KEY: ${APP_KEY}
+      APP_URL: http://localhost:8000
+    restart: unless-stopped
+```
+
+Then run:
+
+```bash
+docker-compose up -d
+```
+
+View logs:
+
+```bash
+docker-compose logs -f sela-backend
+```
+
+Stop the container:
+
+```bash
+docker-compose down
+```
+
+### Render Deployment
+
+Render automatically detects `Dockerfile` and `docker-compose.yml` in your repo.
+
+#### Steps
+
+1. **Push to GitHub** and connect your repo to Render
+2. **Create Web Service** on Render
+3. **Configure environment variables** in Render dashboard:
+   ```
+   DB_HOST=your-supabase-host
+   DB_USERNAME=postgres.YOUR_PROJECT_REF
+   DB_PASSWORD=your-password
+   DB_SSLMODE=require
+   APP_KEY=your-generated-key
+   APP_URL=https://your-app.onrender.com
+   ```
+4. **Render auto-detects** port 8000 from `EXPOSE 8000` in Dockerfile
+5. **Deploy** — your app is live at `https://your-app.onrender.com/api`
+
+**Note:** Render uses free tier databases that might sleep. Keep your Supabase project active.
+
+### Environment Variables for Docker
+
+| Variable | Required | Example |
+|----------|----------|---------|
+| `DB_CONNECTION` | Yes | `pgsql` |
+| `DB_HOST` | Yes | `aws-1-ap-southeast-1.pooler.supabase.com` |
+| `DB_PORT` | No | `5432` |
+| `DB_DATABASE` | Yes | `postgres` |
+| `DB_USERNAME` | Yes | `postgres.YOUR_PROJECT_REF` |
+| `DB_PASSWORD` | Yes | Your Supabase password |
+| `DB_SSLMODE` | Yes | `require` |
+| `APP_KEY` | Yes | Generated by `php artisan key:generate` |
+| `APP_URL` | No | `http://localhost:8000` or `https://your-app.onrender.com` |
+
+### Troubleshooting Docker
+
+#### Container exits immediately
+
+Check logs:
+```bash
+docker logs sela-backend
+```
+
+Common causes:
+- Missing `APP_KEY` → generate with `php artisan key:generate`
+- Database unreachable → verify `DB_HOST`, `DB_USERNAME`, `DB_PASSWORD`
+- Port 8000 already in use → `docker run -p 8001:8000 ...`
+
+#### "Address already in use"
+
+```bash
+docker ps  # List running containers
+docker stop <container-id>
+```
+
+#### Rebuild after code changes
+
+```bash
+docker build --no-cache -t sela-backend:latest .
+docker-compose down && docker-compose up -d
+```
+
+#### Execute commands inside running container
+
+```bash
+docker exec sela-backend php artisan migrate
+docker exec sela-backend php artisan config:cache
+```
+
+#### View Nginx/PHP logs
+
+```bash
+docker exec sela-backend tail -f /var/log/nginx/error.log
+```
+
+### Performance Notes
+
+- **Build time**: ~2-3 minutes (first build), <1 minute (cached)
+- **Image size**: ~800MB (includes Node, PHP, Nginx)
+- **RAM usage**: ~200-300MB idle
+- **Cold start**: ~10-15s on Render free tier (normal)
 
 ## Authentication
 

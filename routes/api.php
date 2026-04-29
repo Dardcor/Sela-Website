@@ -9,80 +9,91 @@ use App\Http\Controllers\Api\GroupMemberController;
 use App\Http\Controllers\Api\SubTaskController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\FileUploadController;
+use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\ClassController;
 use Illuminate\Support\Facades\Route;
-
-/*
-|--------------------------------------------------------------------------
-| Public Routes
-|--------------------------------------------------------------------------
-*/
 
 Route::post('register', [AuthController::class, 'register']);
 Route::post('login', [AuthController::class, 'login']);
 
-// ETHOL login (public — alternative auth method)
+Route::post('forgot-password', [AuthController::class, 'forgot_password']);
+Route::post('verify-otp', [AuthController::class, 'verify_otp']);
+Route::post('reset-password', [AuthController::class, 'reset_password']);
+
 Route::post('ethol/login', [EtholController::class, 'login']);
 
-/*
-|--------------------------------------------------------------------------
-| Authenticated Routes (auth:sanctum)
-|--------------------------------------------------------------------------
-*/
 Route::middleware('auth:sanctum')->group(function () {
 
-    // Auth
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
+    Route::put('me', [AuthController::class, 'updateProfile']);
 
-    // Dashboard
+    Route::post('change-password', [AuthController::class, 'changePassword']);
+    Route::post('verify-password', [AuthController::class, 'verifyPassword']);
+
     Route::get('dashboard/{user_id}', [DashboardController::class, 'index']);
 
-    // Users (no store — use register)
     Route::get('users', [UserController::class, 'index']);
+    Route::get('users/search', [UserController::class, 'search']);
     Route::get('users/{id}', [UserController::class, 'show']);
     Route::put('users/{id}', [UserController::class, 'update']);
     Route::delete('users/{id}', [UserController::class, 'destroy']);
 
-    // Profile Abilities (maps to profile_abilities table in db.sql)
     Route::get('users/{userId}/abilities', [UserController::class, 'abilities']);
     Route::post('users/{userId}/abilities', [UserController::class, 'storeAbility']);
     Route::delete('profile-abilities/{id}', [UserController::class, 'destroyAbility']);
-
-    // Groups
+    
+    Route::get('profile_abilities', [UserController::class, 'getProfileAbilities']);
+    Route::put('profile_abilities', [UserController::class, 'updateProfileAbilities']);
+    
     Route::get('/groups/user/{user_id}', [GroupController::class, 'getByUser']);
     Route::get('/groups/{group_id}', [GroupController::class, 'detail']);
     Route::post('/groups', [GroupController::class, 'store']);
     Route::post('/groups/join', [GroupController::class, 'join']);
+    Route::delete('/groups/{id}', [GroupController::class, 'destroy']);
 
-    // Group Members (nested under groups)
     Route::get('groups/{groupId}/members', [GroupMemberController::class, 'index']);
     Route::post('groups/{groupId}/members', [GroupMemberController::class, 'store']);
     Route::put('group-members/{id}', [GroupMemberController::class, 'update']);
     Route::delete('groups/{groupId}/members/{userId}', [GroupMemberController::class, 'destroy']);
-
-    // Tasks
+    
     Route::prefix('tasks')->group(function () {
         Route::get('/user/{user_id}', [TaskController::class, 'getByUser']);
         Route::get('/{task_id}/detail/{user_id}', [TaskController::class, 'detail']);
         Route::post('/', [TaskController::class, 'store']);
+        Route::put('/{id}', [TaskController::class, 'update']);
+        Route::delete('/{id}', [TaskController::class, 'destroy']);
     });
 
-    // Subtasks (maps to subtasks + subtask_progress tables in db.sql)
     Route::post('/tasks/{task_id}/subtasks', [SubTaskController::class, 'store']);
     Route::patch('subtasks/{subtask_id}/progress', [SubTaskController::class, 'updateProgress']);
     Route::delete('subtasks/{id}', [SubTaskController::class, 'destroy']);
-
-    // Task Links (maps to task_links table in db.sql)
     Route::get('tasks/{taskId}/links', [TaskController::class, 'links']);
     Route::post('tasks/{taskId}/links', [TaskController::class, 'storeLink']);
+    Route::delete('tasks/{taskId}/links', [TaskController::class, 'destroyAllLinks']);
     Route::delete('task-links/{id}', [TaskController::class, 'destroyLink']);
 
-    // Task Files (maps to task_files table in db.sql)
     Route::get('tasks/{taskId}/files', [TaskController::class, 'files']);
     Route::post('tasks/{taskId}/files', [TaskController::class, 'storeFile']);
+    Route::delete('tasks/{taskId}/files', [TaskController::class, 'destroyAllFiles']);
     Route::delete('task-files/{id}', [TaskController::class, 'destroyFile']);
+    
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications', [NotificationController::class, 'store']);
+    Route::post('/notifications/delete-multiple', [NotificationController::class, 'destroyMultiple']);
+    Route::put('/notifications/mark-read-multiple', [NotificationController::class, 'markMultipleAsRead']);
+    Route::put('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
+    
+    Route::post('/upload/avatar', [FileUploadController::class, 'uploadAvatar']);
+    Route::post('/upload/task-file', [FileUploadController::class, 'uploadTaskFile']);
 
-    // ETHOL Integration (authenticated — requires prior login)
+    Route::get('/courses', [CourseController::class, 'index']);
+    Route::get('/classes', [ClassController::class, 'index']);
+
     Route::prefix('ethol')->group(function () {
         Route::post('logout', [EtholController::class, 'logout']);
         Route::get('schedule', [EtholController::class, 'schedule']);
