@@ -1,20 +1,20 @@
-<section class="bg-[#13889B] py-16 border-y-[6px] border-black relative overflow-hidden z-10">
-    <div class="max-w-[1280px] mx-auto px-10 max-md:px-5 relative z-10">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+<section class="bg-[#13889B] py-16 max-[768px]:py-10 border-y-[6px] max-[480px]:border-y-[4px] border-black relative overflow-hidden z-10">
+    <div class="max-w-[1280px] mx-auto px-10 max-[768px]:px-5 relative z-10">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-[768px]:gap-5 text-center">
             
-            <div class="p-8 bg-white rounded-[24px] border-[4px] border-black shadow-[8px_8px_0px_#000] hover:-translate-y-2 hover:shadow-[12px_12px_0px_#000] transition-all duration-300">
-                <h3 class="text-6xl font-black text-[#13889B] mb-2 font-mono counter" data-target="{{ $totalUsers }}">0</h3>
-                <p class="text-xl text-black font-bold uppercase tracking-wider">Mahasiswa<br>Bergabung</p>
+            <div class="p-8 max-[480px]:p-5 bg-white rounded-[24px] max-[480px]:rounded-[18px] border-[4px] max-[480px]:border-[3px] border-black shadow-[8px_8px_0px_#000] max-[480px]:shadow-[4px_4px_0px_#000] hover:-translate-y-2 hover:shadow-[12px_12px_0px_#000] transition-all duration-300">
+                <h3 class="text-6xl max-[768px]:text-5xl max-[480px]:text-4xl font-black text-[#13889B] mb-2 font-mono counter" data-target="{{ $totalUsers }}">0</h3>
+                <p class="text-xl max-[480px]:text-base text-black font-bold uppercase tracking-wider">Mahasiswa<br>Bergabung</p>
             </div>
             
-            <div class="p-8 bg-white rounded-[24px] border-[4px] border-black shadow-[8px_8px_0px_#000] hover:-translate-y-2 hover:shadow-[12px_12px_0px_#000] transition-all duration-300">
-                <h3 class="text-6xl font-black text-[#13889B] mb-2 font-mono counter" data-target="{{ $totalTasks }}">0</h3>
-                <p class="text-xl text-black font-bold uppercase tracking-wider">Tugas<br>Terkelola</p>
+            <div class="p-8 max-[480px]:p-5 bg-white rounded-[24px] max-[480px]:rounded-[18px] border-[4px] max-[480px]:border-[3px] border-black shadow-[8px_8px_0px_#000] max-[480px]:shadow-[4px_4px_0px_#000] hover:-translate-y-2 hover:shadow-[12px_12px_0px_#000] transition-all duration-300">
+                <h3 class="text-6xl max-[768px]:text-5xl max-[480px]:text-4xl font-black text-[#13889B] mb-2 font-mono counter" data-target="{{ $totalTasks }}">0</h3>
+                <p class="text-xl max-[480px]:text-base text-black font-bold uppercase tracking-wider">Tugas<br>Terkelola</p>
             </div>
             
-            <div class="p-8 bg-white rounded-[24px] border-[4px] border-black shadow-[8px_8px_0px_#000] hover:-translate-y-2 hover:shadow-[12px_12px_0px_#000] transition-all duration-300">
-                <h3 class="text-6xl font-black text-[#13889B] mb-2 font-mono counter" data-target="{{ $totalGroups }}">0</h3>
-                <p class="text-xl text-black font-bold uppercase tracking-wider">Grup<br>Aktif</p>
+            <div class="p-8 max-[480px]:p-5 bg-white rounded-[24px] max-[480px]:rounded-[18px] border-[4px] max-[480px]:border-[3px] border-black shadow-[8px_8px_0px_#000] max-[480px]:shadow-[4px_4px_0px_#000] hover:-translate-y-2 hover:shadow-[12px_12px_0px_#000] transition-all duration-300">
+                <h3 class="text-6xl max-[768px]:text-5xl max-[480px]:text-4xl font-black text-[#13889B] mb-2 font-mono counter" data-target="{{ $totalGroups }}">0</h3>
+                <p class="text-xl max-[480px]:text-base text-black font-bold uppercase tracking-wider">Grup<br>Aktif</p>
             </div>
 
         </div>

@@ -1,54 +1,53 @@
-<section class="hero pt-[80px] pb-[140px] relative 
+<section class="hero pt-[80px] pb-[140px] max-[768px]:pt-[40px] max-[768px]:pb-[80px] relative 
                 bg-[linear-gradient(to_right,rgba(0,0,0,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.05)_1px,transparent_1px)] 
                 bg-[size:50px_50px] overflow-hidden animate-[grid-move_20s_linear_infinite]">
-    <div class="max-w-[1280px] mx-auto px-10 max-md:px-5">
-        <div class="grid grid-cols-2 gap-[60px] items-center max-[992px]:grid-cols-1 max-[992px]:text-center">
+    <div class="max-w-[1280px] mx-auto px-10 max-[768px]:px-5">
+        <div class="grid grid-cols-2 gap-[60px] max-[768px]:gap-[40px] items-center max-[992px]:grid-cols-1 max-[992px]:text-center">
             
             <div class="hero-content">
-                <div class="hero-badge reveal inline-flex items-center gap-2 bg-black text-white text-[0.8rem] font-bold uppercase tracking-[1px] py-2 px-[18px] rounded-full mb-7">
+                <div class="hero-badge reveal inline-flex items-center gap-2 bg-black text-white text-[0.8rem] max-[480px]:text-[0.7rem] font-bold uppercase tracking-[1px] py-2 px-[18px] max-[480px]:px-[14px] rounded-full mb-7 max-[480px]:mb-5">
                     <span class="w-2 h-2 bg-[#22c55e] rounded-full animate-[blink_1.4s_infinite]"></span> 
                     Platform Kolaborasi #1 Mahasiswa
                 </div>
                 
-                <h1 class="reveal d1 text-[3.2rem] max-md:text-[2.4rem] text-black mb-6 leading-[1.1] font-mono font-normal uppercase">
+                <h1 class="reveal d1 text-[3.2rem] max-[768px]:text-[2.4rem] max-[480px]:text-[1.7rem] text-black mb-6 leading-[1.1] font-mono font-normal uppercase">
                     Kerja Kelompok <em class="text-cyan not-italic">Adil</em>,<br>Tanpa Drama Free-Rider.
                 </h1>
                 
-                <p class="reveal d2 text-[1.15rem] text-muted mb-[40px] font-medium leading-[1.7] max-w-[480px] max-[992px]:max-w-full max-[992px]:mx-auto">
+                <p class="reveal d2 text-[1.15rem] max-[480px]:text-[1rem] text-muted mb-[40px] max-[768px]:mb-[28px] font-medium leading-[1.7] max-w-[480px] max-[992px]:max-w-full max-[992px]:mx-auto">
                     SELA membagi tugas dengan cerdas menggunakan teknologi AI, memantau kontribusi setiap anggota, dan memastikan kolaborasi mahasiswa berjalan transparan.
                 </p>
                 
-                <div class="hero-btns reveal d2 flex gap-4 flex-wrap mb-9 max-[992px]:justify-center max-[480px]:flex-col max-[480px]:w-full max-[480px]:max-w-[300px] max-[480px]:mx-auto">
-                    <a href="https://play.google.com/store/apps/details?id=com.pdbl.sela" class="btn inline-flex items-center justify-center gap-2 py-[14px] px-[28px] font-mono text-[0.85rem] cursor-pointer rounded-[14px] border-[3px] border-cyan transition-all duration-200 ease-[cubic-bezier(0.19,1,0.22,1)] whitespace-nowrap bg-cyan text-white shadow-[6px_6px_0px_#000] hover:-translate-x-[3px] hover:-translate-y-[3px] hover:shadow-[10px_10px_0px_#000]">
+                <div class="hero-btns reveal d2 flex gap-4 max-[480px]:gap-3 flex-wrap mb-9 max-[768px]:mb-6 max-[992px]:justify-center max-[480px]:flex-col max-[480px]:w-full max-[480px]:max-w-[300px] max-[480px]:mx-auto">
+                    <a href="https://play.google.com/store/apps/details?id=com.pdbl.sela" class="btn inline-flex items-center justify-center gap-2 py-[14px] px-[28px] max-[480px]:py-[12px] max-[480px]:px-[20px] font-mono text-[0.85rem] max-[480px]:text-[0.78rem] cursor-pointer rounded-[14px] border-[3px] border-cyan transition-all duration-200 ease-[cubic-bezier(0.19,1,0.22,1)] whitespace-nowrap bg-cyan text-white shadow-[6px_6px_0px_#000] hover:-translate-x-[3px] hover:-translate-y-[3px] hover:shadow-[10px_10px_0px_#000]">
                         Mulai Gunakan SELA Gratis
                     </a>
-                    <a href="#how" class="btn inline-flex items-center justify-center gap-2 py-[14px] px-[28px] font-mono text-[0.85rem] cursor-pointer rounded-[14px] border-[3px] border-black transition-all duration-200 ease-[cubic-bezier(0.19,1,0.22,1)] whitespace-nowrap bg-white text-black shadow-neo hover:-translate-x-[3px] hover:-translate-y-[3px] hover:shadow-neo-hover">
+                    <a href="#how" class="btn inline-flex items-center justify-center gap-2 py-[14px] px-[28px] max-[480px]:py-[12px] max-[480px]:px-[20px] font-mono text-[0.85rem] max-[480px]:text-[0.78rem] cursor-pointer rounded-[14px] border-[3px] border-black transition-all duration-200 ease-[cubic-bezier(0.19,1,0.22,1)] whitespace-nowrap bg-white text-black shadow-neo hover:-translate-x-[3px] hover:-translate-y-[3px] hover:shadow-neo-hover">
                         Lihat Cara Kerja
                     </a>
                 </div>
                 
-                <div class="hero-stats reveal d3 flex gap-8 max-[992px]:justify-center">
+                <div class="hero-stats reveal d3 flex gap-8 max-[480px]:gap-5 max-[992px]:justify-center">
                     <div class="hero-stat">
-                        <strong class="block font-mono text-[1.6rem] text-black">10K+</strong>
-                        <span class="text-[0.85rem] text-muted font-semibold">Mahasiswa Aktif</span>
+                        <strong class="block font-mono text-[1.6rem] max-[480px]:text-[1.3rem] text-black">10K+</strong>
+                        <span class="text-[0.85rem] max-[480px]:text-[0.75rem] text-muted font-semibold">Mahasiswa Aktif</span>
                     </div>
                     <div class="hero-stat">
-                        <strong class="block font-mono text-[1.6rem] text-black">500+</strong>
-                        <span class="text-[0.85rem] text-muted font-semibold">Universitas</span>
+                        <strong class="block font-mono text-[1.6rem] max-[480px]:text-[1.3rem] text-black">500+</strong>
+                        <span class="text-[0.85rem] max-[480px]:text-[0.75rem] text-muted font-semibold">Universitas</span>
                     </div>
                     <div class="hero-stat">
-                        <strong class="block font-mono text-[1.6rem] text-black">4.9★</strong>
-                        <span class="text-[0.85rem] text-muted font-semibold">Rating Pengguna</span>
+                        <strong class="block font-mono text-[1.6rem] max-[480px]:text-[1.3rem] text-black">4.9★</strong>
+                        <span class="text-[0.85rem] max-[480px]:text-[0.75rem] text-muted font-semibold">Rating Pengguna</span>
                     </div>
                 </div>
             </div>
 
-            <div class="reveal d2 relative h-[580px] flex justify-center items-center [perspective:1200px] max-[992px]:h-[420px]">
-                <div class="phone-blob absolute w-[360px] h-[360px] bg-cyan rounded-full blur-[80px] opacity-35 animate-[blob-pulse_5s_alternate_infinite]"></div>
+            <div class="reveal d2 relative h-[clamp(280px,42vw,580px)] flex justify-center items-center [perspective:1200px]">
+                <div class="phone-blob absolute w-[clamp(180px,30vw,360px)] h-[clamp(180px,30vw,360px)] bg-cyan rounded-full blur-[clamp(50px,7vw,80px)] opacity-35 animate-[blob-pulse_5s_alternate_infinite]"></div>
                 
-                <div class="phone-mockup w-[260px] h-[540px] bg-slate-50 rounded-[42px] border-[10px] border-[#2a2a2a] shadow-[24px_24px_64px_rgba(9,99,126,0.45)] relative overflow-hidden z-10 [transform-style:preserve-3d] animate-[phone-float_7s_ease-in-out_infinite]" id="heroPhone">
-                    <!-- Status Bar (Notch) -->
-                    <div class="absolute top-0 inset-x-0 h-5 bg-[#2a2a2a] rounded-b-2xl w-32 mx-auto z-20"></div>
+                <div class="phone-mockup w-[clamp(160px,28vw,260px)] aspect-[13/27] bg-slate-50 rounded-[clamp(28px,4vw,42px)] border-[clamp(7px,1.1vw,10px)] border-[#2a2a2a] shadow-[24px_24px_64px_rgba(9,99,126,0.45)] relative overflow-hidden z-10 [transform-style:preserve-3d] animate-[phone-float_7s_ease-in-out_infinite]" id="heroPhone">
+                    <div class="absolute top-0 inset-x-0 h-[clamp(14px,1.5vw,20px)] bg-[#2a2a2a] rounded-b-2xl w-[45%] mx-auto z-20"></div>
                     
                     <!-- Gambar Screenshot Aplikasi Flutter -->
                     <div class="w-full h-full bg-white relative">

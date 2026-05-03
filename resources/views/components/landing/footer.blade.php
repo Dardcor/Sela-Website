@@ -1,9 +1,9 @@
-<footer class="bg-black text-white pt-[80px]">
-    <div class="max-w-[1280px] mx-auto px-10 max-md:px-5">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-[32px] md:gap-[40px] lg:gap-[60px] pb-[60px] border-b-[2px] border-[#222]">
+<footer class="bg-black text-white pt-[80px] max-[768px]:pt-[50px]">
+    <div class="max-w-[1280px] mx-auto px-10 max-[768px]:px-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr] gap-[32px] md:gap-[40px] lg:gap-[60px] pb-[60px] max-[768px]:pb-[40px] border-b-[2px] border-[#222]">
             <div>
-                <a href="#" class="logo block text-[2.4rem] mb-4">SELA</a>
-                <p class="text-[0.92rem] text-[#888] leading-[1.7] max-w-[280px] mb-6">Platform kolaborasi akademik berbasis AI yang memastikan setiap mahasiswa berkontribusi secara adil dan dosen dapat memantau kemajuan kelompok secara transparan.</p>
+                <a href="#" class="logo block text-[2.4rem] max-[480px]:text-[2rem] mb-4">SELA</a>
+                <p class="text-[0.92rem] max-[480px]:text-[0.85rem] text-[#888] leading-[1.7] max-w-[280px] mb-6">Platform kolaborasi akademik berbasis AI yang memastikan setiap mahasiswa berkontribusi secara adil dan dosen dapat memantau kemajuan kelompok secara transparan.</p>
                 <div class="flex gap-[12px]">
                     <a href="#" class="w-[40px] h-[40px] rounded-[10px] border-[2px] border-[#333] flex items-center justify-center text-[1.1rem] transition-all duration-200 ease-[cubic-bezier(0.19,1,0.22,1)] text-[#aaa] hover:border-cyan hover:text-cyan hover:-translate-y-[3px]" title="Instagram">IG</a>
                     <a href="#" class="w-[40px] h-[40px] rounded-[10px] border-[2px] border-[#333] flex items-center justify-center text-[1.1rem] transition-all duration-200 ease-[cubic-bezier(0.19,1,0.22,1)] text-[#aaa] hover:border-cyan hover:text-cyan hover:-translate-y-[3px]" title="Twitter/X">X</a>
@@ -39,7 +39,7 @@
                 </ul>
             </div>
         </div>
-        <div class="flex flex-col md:flex-row items-center justify-between py-[28px] gap-[16px] md:gap-0 text-center md:text-left">
+        <div class="flex flex-col md:flex-row items-center justify-between py-[28px] max-[480px]:py-[20px] gap-[16px] md:gap-0 text-center md:text-left">
             <p class="text-[0.85rem] text-[#555]">&copy; {{ date('Y') }} Tim SELA. All rights reserved.</p>
             <div class="flex gap-6">
                 <a href="#" class="text-[0.85rem] text-[#555] transition-colors duration-200 ease-[cubic-bezier(0.19,1,0.22,1)] hover:text-white">Terms of Service</a>

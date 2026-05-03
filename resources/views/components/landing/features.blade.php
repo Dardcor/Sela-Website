@@ -1,19 +1,19 @@
-<section id="features" class="py-[120px] bg-black text-white border-t-[8px] border-black rounded-t-[60px] -mt-[60px] relative z-20">
-    <div class="max-w-[1280px] mx-auto px-10 max-md:px-5">
-        <div class="text-center mb-[80px] reveal">
+<section id="features" class="py-[120px] max-[768px]:py-[60px] bg-black text-white border-t-[8px] border-black rounded-t-[60px] max-[480px]:rounded-t-[36px] -mt-[60px] max-[480px]:-mt-[36px] relative z-20">
+    <div class="max-w-[1280px] mx-auto px-10 max-[768px]:px-5">
+        <div class="text-center mb-[80px] max-[768px]:mb-[48px] reveal">
             <div class="inline-block text-[0.78rem] font-bold uppercase tracking-[2px] text-cyan mb-[16px]">Fitur Unggulan</div>
-            <h2 class="text-[3.2rem] max-[768px]:text-[2.4rem] mb-[20px] text-cyan">Didesain untuk<br>Kolaborasi Nyata.</h2>
-            <p class="text-[1.1rem] max-w-[680px] mx-auto leading-[1.7] text-[#ccc]">Semua fitur di bawah ini saling terhubung. Coba simulasi interaktifnya dari langkah pertama hingga selesai!</p>
+            <h2 class="text-[3.2rem] max-[768px]:text-[2.4rem] max-[480px]:text-[1.7rem] mb-[20px] text-cyan">Didesain untuk<br>Kolaborasi Nyata.</h2>
+            <p class="text-[1.1rem] max-[480px]:text-[0.95rem] max-w-[680px] mx-auto leading-[1.7] text-[#ccc]">Semua fitur di bawah ini saling terhubung. Coba simulasi interaktifnya dari langkah pertama hingga selesai!</p>
         </div>
 
-        <div class="flex flex-col gap-[100px]">
+        <div class="flex flex-col gap-[100px] max-[768px]:gap-[60px]">
 
             <!-- FEATURE 1: AI GENERATOR -->
-            <div class="grid grid-cols-2 max-[992px]:grid-cols-1 gap-[60px] items-center reveal">
+            <div class="grid grid-cols-2 max-[992px]:grid-cols-1 gap-[60px] max-[768px]:gap-[32px] items-center reveal">
                 <div>
                     <div class="inline-flex items-center gap-[8px] bg-[#09637e]/20 border-[1.5px] border-cyan text-cyan text-[0.75rem] font-bold uppercase tracking-[1.5px] py-[6px] px-[14px] rounded-full mb-[20px]"><span class="w-[6px] h-[6px] bg-cyan rounded-full animate-pulse"></span>Langkah 01</div>
-                    <h3 class="text-[2.2rem] text-white mb-[18px] leading-[1.15]">Generate Sub-Tugas (AI)</h3>
-                    <p class="text-[1.05rem] text-[#aaa] leading-[1.75] mb-[28px]">Input tugas besar dari dosen, dan biarkan AI memecahnya menjadi langkah-langkah kecil yang siap dieksekusi.</p>
+                    <h3 class="text-[2.2rem] max-[768px]:text-[1.6rem] max-[480px]:text-[1.35rem] text-white mb-[18px] leading-[1.15]">Generate Sub-Tugas (AI)</h3>
+                    <p class="text-[1.05rem] max-[480px]:text-[0.92rem] text-[#aaa] leading-[1.75] mb-[28px]">Input tugas besar dari dosen, dan biarkan AI memecahnya menjadi langkah-langkah kecil yang siap dieksekusi.</p>
                     <div class="flex items-start gap-[12px]"><div class="w-[20px] h-[20px] rounded-full bg-cyan shrink-0 mt-[2px] flex items-center justify-center after:content-[''] after:w-1.5 after:h-1.5 after:bg-white after:rounded-full"></div><span class="text-[0.95rem] text-[#ccc] leading-[1.6]">Cobalah ketik tugas di kotak simulasi sebelah kanan.</span></div>
                 </div>
                 
@@ -52,11 +52,11 @@
             </div>
 
             <!-- FEATURE 2: DISTRIBUTION -->
-            <div class="grid grid-cols-2 max-[992px]:grid-cols-1 gap-[60px] items-center [direction:rtl] [&>*]:[direction:ltr] max-[992px]:[direction:ltr] reveal">
+            <div class="grid grid-cols-2 max-[992px]:grid-cols-1 gap-[60px] max-[768px]:gap-[32px] items-center [direction:rtl] [&>*]:[direction:ltr] max-[992px]:[direction:ltr] reveal">
                 <div>
                     <div class="inline-flex items-center gap-[8px] bg-[#09637e]/20 border-[1.5px] border-cyan text-cyan text-[0.75rem] font-bold uppercase tracking-[1.5px] py-[6px] px-[14px] rounded-full mb-[20px]"><span class="w-[6px] h-[6px] bg-cyan rounded-full animate-pulse"></span>Langkah 02</div>
-                    <h3 class="text-[2.2rem] text-white mb-[18px] leading-[1.15]">Bagi Tugas Berkeadilan</h3>
-                    <p class="text-[1.05rem] text-[#aaa] leading-[1.75] mb-[28px]">Tugas yang sudah dipecah tadi kini dibagikan secara adil berdasarkan spesialisasi masing-masing anggota. Ceklis tugas untuk melihat dampaknya!</p>
+                    <h3 class="text-[2.2rem] max-[768px]:text-[1.6rem] max-[480px]:text-[1.35rem] text-white mb-[18px] leading-[1.15]">Bagi Tugas Berkeadilan</h3>
+                    <p class="text-[1.05rem] max-[480px]:text-[0.92rem] text-[#aaa] leading-[1.75] mb-[28px]">Tugas yang sudah dipecah tadi kini dibagikan secara adil berdasarkan spesialisasi masing-masing anggota. Ceklis tugas untuk melihat dampaknya!</p>
                 </div>
                 <div class="relative w-full flex justify-center items-center">
                     <div class="absolute w-[250px] h-[250px] bg-green-500 rounded-full blur-[70px] opacity-10"></div>
@@ -88,11 +88,11 @@
             </div>
 
             <!-- FEATURE 3: ANALYTICS -->
-            <div class="grid grid-cols-2 max-[992px]:grid-cols-1 gap-[60px] items-center reveal">
+            <div class="grid grid-cols-2 max-[992px]:grid-cols-1 gap-[60px] max-[768px]:gap-[32px] items-center reveal">
                 <div>
                     <div class="inline-flex items-center gap-[8px] bg-[#09637e]/20 border-[1.5px] border-cyan text-cyan text-[0.75rem] font-bold uppercase tracking-[1.5px] py-[6px] px-[14px] rounded-full mb-[20px]"><span class="w-[6px] h-[6px] bg-cyan rounded-full animate-pulse"></span>Langkah 03</div>
-                    <h3 class="text-[2.2rem] text-white mb-[18px] leading-[1.15]">Pantauan Dosen Otomatis</h3>
-                    <p class="text-[1.05rem] text-[#aaa] leading-[1.75] mb-[28px]">Setiap kotak yang Anda ceklis di Langkah 02 akan secara *real-time* mengubah grafik kontribusi di *dashboard* dosen ini.</p>
+                    <h3 class="text-[2.2rem] max-[768px]:text-[1.6rem] max-[480px]:text-[1.35rem] text-white mb-[18px] leading-[1.15]">Pantauan Dosen Otomatis</h3>
+                    <p class="text-[1.05rem] max-[480px]:text-[0.92rem] text-[#aaa] leading-[1.75] mb-[28px]">Setiap kotak yang Anda ceklis di Langkah 02 akan secara *real-time* mengubah grafik kontribusi di *dashboard* dosen ini.</p>
                 </div>
                 <div class="relative w-full flex justify-center items-center">
                     <div class="absolute w-[250px] h-[250px] bg-purple-500 rounded-full blur-[70px] opacity-20"></div>
