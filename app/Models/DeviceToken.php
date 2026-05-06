@@ -1,0 +1,28 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class DeviceToken extends Model
+{
+    use HasUuids;
+
+    protected $table = 'device_tokens';
+    protected $keyType = 'string';
+    public $incrementing = false;
+    public const UPDATED_AT = null;
+
+    protected $fillable = [
+        'user_id',
+        'token',
+        'platform',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(Profile::class, 'user_id');
+    }
+}

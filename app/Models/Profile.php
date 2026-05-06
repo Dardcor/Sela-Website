@@ -67,4 +67,9 @@ class Profile extends Model
     {
         return $this->hasMany(Notification::class, 'user_id');
     }
+
+    public function lecturerClasses(): HasMany
+    {
+        return $this->hasMany(LecturerClass::class, 'lecturer_id');
+    }
 }

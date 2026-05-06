@@ -21,6 +21,23 @@ class SubTaskService
                 'user_id' => $request->user_id,
                 'progress' => 0,
             ]);
+
+            try {
+                $notificationService = app(\App\Services\NotificationService::class);
+                
+                $task = \App\Models\Task::find($task_id);
+                $taskTitle = $task ? $task->title : 'Tugas';
+                
+                $notificationService->createNotification([
+                    'user_id' => $request->user_id,
+                    'title' => 'Subtask Baru Ditugaskan',
+                    'message' => 'Anda ditugaskan mengerjakan "' . $subtask->title . '" pada tugas ' . $taskTitle . '.',
+                    'type' => 'subtask',
+                    'related_id' => $subtask->id,
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Subtask FCM failed: ' . $e->getMessage());
+            }
         }
 
         return $subtask->load('progressEntries');

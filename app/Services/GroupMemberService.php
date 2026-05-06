@@ -15,7 +15,26 @@ class GroupMemberService
     public function addMember(array $data): GroupMember
     {
         $data['joined_at'] = now();
-        return GroupMember::create($data);
+        $member = GroupMember::create($data);
+
+        try {
+            $notificationService = app(\App\Services\NotificationService::class);
+            
+            $group = \App\Models\Group::find($member->group_id);
+            $groupName = $group ? $group->name : 'Grup';
+            
+            $notificationService->createNotification([
+                'user_id' => $member->user_id,
+                'title' => 'Undangan Grup',
+                'message' => 'Anda telah ditambahkan ke grup "' . $groupName . '".',
+                'type' => 'group_invite',
+                'related_id' => $member->group_id,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Group Member FCM failed: ' . $e->getMessage());
+        }
+
+        return $member;
     }
 
     public function getById(string $id): GroupMember

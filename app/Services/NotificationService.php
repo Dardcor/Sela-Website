@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Notification;
+use App\Services\FcmService;
 
 class NotificationService
 {
@@ -20,7 +21,7 @@ class NotificationService
 
     public function createNotification(array $data)
     {
-        return Notification::create([
+        $notification = Notification::create([
             'user_id' => $data['user_id'],
             'title' => $data['title'],
             'message' => $data['message'],
@@ -29,6 +30,20 @@ class NotificationService
             'is_read' => false,
             'created_at' => now(),
         ]);
+
+        try {
+            $fcmService = app(FcmService::class);
+            $fcmService->sendToUser(
+                $data['user_id'],
+                $data['title'],
+                $data['message'],
+                ['notification_id' => $notification->id, 'type' => $data['type'] ?? 'system']
+            );
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('FCM push failed: ' . $e->getMessage());
+        }
+
+        return $notification;
     }
 
     public function markAsRead($id)

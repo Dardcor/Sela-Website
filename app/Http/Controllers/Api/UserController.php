@@ -104,4 +104,46 @@ class UserController extends Controller
 
         return response()->json(null, 204);
     }
+
+    public function requestLecturerAccess(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        
+        $adminEmail = env('GOOGLE_SMTP_USER', 'admin@sela.com');
+        if (!$adminEmail || $adminEmail === 'null') {
+            $adminEmail = 'admin@sela.com';
+        }
+
+        try {
+            $approveUrl = \Illuminate\Support\Facades\URL::signedRoute(
+                'users.approve-lecturer',
+                ['user' => $user->id]
+            );
+
+            \Illuminate\Support\Facades\Mail::to($adminEmail)->send(
+                new \App\Mail\LecturerAccessRequestMail($user, $approveUrl)
+            );
+            return response()->json(['message' => 'Lecturer access request sent successfully.']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Failed to send request.', 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function approveLecturerAccess(Request $request, \App\Models\User $user)
+    {
+        if ($user->role === 'lecturer') {
+            return response()->view('emails.lecturer_approved', [
+                'name' => $user->profile->full_name ?? $user->username,
+                'alreadyApproved' => true,
+            ]);
+        }
+
+        $user->update(['role' => 'lecturer']);
+        $user->tokens()->delete();
+
+        return response()->view('emails.lecturer_approved', [
+            'name' => $user->profile->full_name ?? $user->username,
+            'alreadyApproved' => false,
+        ]);
+    }
 }

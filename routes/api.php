@@ -24,7 +24,26 @@ Route::post('reset-password', [AuthController::class, 'reset_password']);
 
 Route::post('ethol/login', [EtholController::class, 'login']);
 
+Route::get('users/approve-lecturer/{user}', [UserController::class, 'approveLecturerAccess'])
+    ->name('users.approve-lecturer')
+    ->middleware('signed');
+
+use App\Http\Controllers\Api\LecturerController;
+use App\Http\Controllers\Api\DeviceTokenController;
+
 Route::middleware('auth:sanctum')->group(function () {
+    // Lecturer endpoints
+    Route::prefix('lecturer')->group(function () {
+        Route::get('/classes', [LecturerController::class, 'classes']);
+        Route::put('/classes', [LecturerController::class, 'updateClasses']);
+        Route::get('/classes/{id}/tasks', [LecturerController::class, 'classTasks']);
+        Route::get('/tasks/{taskId}/overview', [LecturerController::class, 'taskOverview']);
+    });
+
+    // Device token endpoints
+    Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
+    Route::delete('/device-tokens', [DeviceTokenController::class, 'destroy']);
+
 
     Route::post('logout', [AuthController::class, 'logout']);
     Route::get('me', [AuthController::class, 'me']);
@@ -37,6 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('users', [UserController::class, 'index']);
     Route::get('users/search', [UserController::class, 'search']);
+    Route::post('users/request-lecturer', [UserController::class, 'requestLecturerAccess']);
     Route::get('users/{id}', [UserController::class, 'show']);
     Route::put('users/{id}', [UserController::class, 'update']);
     Route::delete('users/{id}', [UserController::class, 'destroy']);

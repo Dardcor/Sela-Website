@@ -6,6 +6,7 @@ use App\Models\Task;
 use App\Models\TaskFile;
 use App\Models\TaskLink;
 use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
 
 class TaskService
 {
@@ -229,6 +230,36 @@ class TaskService
                 'url' => $request->link,
                 'label' => $request->link_label,
             ]);
+        }
+
+        try {
+            $notificationService = app(NotificationService::class);
+            if (!$task->is_group) {
+                $notificationService->createNotification([
+                    'user_id' => auth()->id(),
+                    'title' => 'Tugas Baru Dibuat',
+                    'message' => 'Task "' . $task->title . '" berhasil ditambahkan.',
+                    'type' => 'task',
+                    'related_id' => $task->id,
+                ]);
+            } else {
+                $groupMembers = \App\Models\GroupMember::where('group_id', $task->group_id)->get();
+                
+                $group = \App\Models\Group::find($task->group_id);
+                $groupName = $group ? $group->name : 'Grup';
+
+                foreach ($groupMembers as $member) {
+                    $notificationService->createNotification([
+                        'user_id' => $member->user_id,
+                        'title' => 'Tugas Grup Baru',
+                        'message' => 'Tugas baru "' . $task->title . '" ditambahkan di grup ' . $groupName . '.',
+                        'type' => 'group_task',
+                        'related_id' => $task->id,
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Task FCM failed: ' . $e->getMessage());
         }
 
         return $task;
